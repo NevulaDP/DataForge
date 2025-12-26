@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataForge</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                950: '#020617',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background-color 0.3s {ease, color 0.3s ease};
+            font-size: 16px; /* Increased base size */
+        }
+        
+        /* Scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .light ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+        .light ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* CodeMirror Custom Styles */
+        .cm-editor { 
+            height: auto; 
+            min-height: 100px; 
+            max-height: 500px;
+            /* Updated font-family and size to match the app */
+            font-family: 'Plus Jakarta Sans', sans-serif !important; 
+            font-size: 15px !important;
+            font-weight: 500 !important;
+        }
+        .cm-scroller { overflow: auto !important; }
+        .cm-focused { outline: none !important; }
+        .cm-tooltip-autocomplete { 
+            border-radius: 16px !important;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5) !important;
+            z-index: 9999 !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            padding: 4px !important;
+        }
+        .dark .cm-tooltip-autocomplete {
+            background-color: #0f172a !important; 
+            border: 1px solid #334155 !important;
+            color: #f8fafc !important;
+        }
+        .light .cm-tooltip-autocomplete {
+            background-color: #ffffff !important; 
+            border: 1px solid #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+        .cm-completionLabel { font-size: 13px !important; font-weight: 600 !important; }
+        .cm-completionDetail { font-size: 11px !important; opacity: 0.6 !important; }
+
+        /* Markdown Preview Styling */
+        .markdown-preview h1 { font-size: 1.875rem; font-weight: 800; margin-bottom: 1rem; }
+        .markdown-preview h2 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-preview h3 { font-size: 1.25rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-preview p { margin-bottom: 1rem; line-height: 1.625; }
+        .markdown-preview ul, .markdown-preview ol { margin-bottom: 1rem; padding-left: 1.5rem; list-style-type: disc; }
+        .markdown-preview blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; font-style: italic; color: #64748b; margin: 1.5rem 0; }
+        .dark .markdown-preview blockquote { color: #94a3b8; }
+        .markdown-preview code { font-family: ui-monospace, monospace; background: rgba(0,0,0,0.05); padding: 0.2em 0.4em; border-radius: 4px; }
+        .dark .markdown-preview code { background: rgba(255,255,255,0.1); }
+        .markdown-preview strong { font-weight: 700; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/": "https://esm.sh/react-dom@19.0.0/",
+    "react/": "https://esm.sh/react@19.0.0/",
+    "@google/genai": "https://esm.sh/@google/genai@1.3.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.471.0",
+    "recharts": "https://esm.sh/recharts@2.15.0",
+    "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1",
+    "@codemirror/view": "https://esm.sh/@codemirror/view@6.34.1?deps=@codemirror/state@6.4.1",
+    "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.3?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1",
+    "@codemirror/autocomplete": "https://esm.sh/@codemirror/autocomplete@6.18.3?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1,@codemirror/language@6.10.3",
+    "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.7.1?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1,@codemirror/language@6.10.3",
+    "@codemirror/search": "https://esm.sh/@codemirror/search@6.5.6?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1",
+    "@codemirror/lang-python": "https://esm.sh/@codemirror/lang-python@6.1.6?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1,@codemirror/language@6.10.3",
+    "@codemirror/lang-sql": "https://esm.sh/@codemirror/lang-sql@6.8.0?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1,@codemirror/language@6.10.3",
+    "@codemirror/lang-markdown": "https://esm.sh/@codemirror/lang-markdown@6.3.2?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1,@codemirror/language@6.10.3",
+    "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2?deps=@codemirror/state@6.4.1,@codemirror/view@6.34.1",
+    "@lezer/highlight": "https://esm.sh/@lezer/highlight@^1.2.3",
+    "marked": "https://esm.sh/marked@15.0.0"
+  }
+}
+</script>
+</head>
+<body class="dark">
+    <div id="root"></div>
+</body>
+</html>

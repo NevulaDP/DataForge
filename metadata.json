@@ -1,0 +1,8 @@
+{
+  "name": "DataForge",
+  "description": "An interactive practice ground for aspiring data analysts to solve realistic business problems with AI-generated data and mentorship.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
