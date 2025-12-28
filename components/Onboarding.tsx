@@ -196,10 +196,10 @@ const Onboarding: React.FC<Props> = ({
       )}
 
       {/* TOP HEADER */}
-      <div className={`w-full max-w-7xl flex items-center z-50 transition-opacity duration-300 mb-20 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        <div className="flex items-center space-x-3">
+      <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-20 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className="flex items-center space-x-4">
           <Logo size="md" theme={theme} />
-          <span className="font-black text-[11px] uppercase tracking-[0.3em] opacity-80">DataForge</span>
+          <span className="font-black text-[12px] uppercase tracking-[0.4em] opacity-90">DataForge</span>
         </div>
       </div>
 
@@ -217,7 +217,7 @@ const Onboarding: React.FC<Props> = ({
           e.target.value = '';
       }} className="hidden" accept=".flight,.json" />
 
-      {/* MAIN CONTENT AREA - Widened to 6xl */}
+      {/* MAIN CONTENT AREA */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-6xl transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}>
         <div className="w-full space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
           
@@ -228,8 +228,8 @@ const Onboarding: React.FC<Props> = ({
               <span className="text-2xl font-medium tracking-tight">Hi analyst!</span>
             </div>
             <div className="space-y-4">
-              <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-none">
-                Find your <span className="bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent">data edge.</span>
+              <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-[1.1] md:leading-[1.15]">
+                Find your <span className="inline-block bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent pb-6 pt-2 -mb-6 -mt-2">data edge.</span>
               </h1>
               <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-3xl">
                 The ultimate flight simulator for junior data analysts. Sharpen your intuition, refine your SQL/Python logic, and master the art of data strategy through high-stakes business simulations.
@@ -318,7 +318,7 @@ const Onboarding: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* SECTOR PILLS CLUSTER - Centralized & Increased Size */}
+            {/* SECTOR PILLS CLUSTER */}
             <div className="flex flex-wrap items-center justify-center gap-5 pt-4">
               {industryPresets.map((ind) => (
                 <button 

@@ -168,7 +168,7 @@ export const getMentorAdvice = async (scenario: Scenario, currentHistory: ChatMe
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return withRetry(async () => {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: `You are a world-class Socratic Tutor and Data Strategy Mentor.
 
       YOUR MISSION:

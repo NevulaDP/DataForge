@@ -5,6 +5,7 @@ import Onboarding from './components/Onboarding';
 import Workspace from './components/Workspace';
 import Sidebar from './components/Sidebar';
 import Mentor from './components/Mentor';
+import MobileLockout from './components/MobileLockout';
 import { generateScenario } from './geminiService';
 
 const SESSION_KEY = 'data_forge_session_v2';
@@ -86,7 +87,6 @@ const App: React.FC = () => {
     setProgress(5);
     setLoadingMessage("Calibrating Neural Core");
 
-    // Artificial progress steering while API is working
     const progressTimer = setInterval(() => {
       setProgress(prev => {
         if (prev < 30) return prev + 2;
@@ -99,7 +99,7 @@ const App: React.FC = () => {
            return prev + 0.5;
         }
         setLoadingMessage("Optimizing Query Cache");
-        return prev; // Stay at 85 until done
+        return prev;
       });
     }, 300);
 
@@ -108,7 +108,6 @@ const App: React.FC = () => {
       setProgress(100);
       setLoadingMessage("Simulation Ready");
       
-      // Short delay for the user to see 100%
       setTimeout(() => {
         setScenario(newScenario);
         setMentorMessages([{ role: 'assistant', content: `The ${newScenario.companyName} data environment is now live. I've logged our primary objectives in the Mission Hub. How would you like to approach this investigation?` }]);
@@ -124,35 +123,49 @@ const App: React.FC = () => {
     }
   };
 
-  if (!scenario || loading) {
-    return (
-      <Onboarding 
-        onSelect={handleStart} 
-        onImport={handleImport} 
-        loading={loading} 
-        loadingMessage={loadingMessage} 
-        progress={progress}
-        error={error} 
-        theme={theme} 
-        toggleTheme={toggleTheme} 
-      />
-    );
-  }
-
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
-      <Sidebar 
-        scenario={scenario} 
-        onReset={handleReset} 
-        onImport={handleImport} 
-        getCurrentState={() => ({ industry, difficulty, scenario, blocks, mentorMessages, theme })}
-        theme={theme}
-      />
-      <div className="flex-1 relative overflow-hidden flex flex-col">
-        <Workspace scenario={scenario} blocks={blocks} setBlocks={setBlocks} onUpdateScenario={s => setScenario(s)} theme={theme} toggleTheme={toggleTheme} onReset={handleReset} />
-        <Mentor scenario={scenario} blocks={blocks} messages={mentorMessages} setMessages={setMentorMessages} />
-      </div>
-    </div>
+    <>
+      <MobileLockout theme={theme} />
+      {!scenario || loading ? (
+        <Onboarding 
+          onSelect={handleStart} 
+          onImport={handleImport} 
+          loading={loading} 
+          loadingMessage={loadingMessage} 
+          progress={progress}
+          error={error} 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+        />
+      ) : (
+        <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
+          <Sidebar 
+            scenario={scenario} 
+            onReset={handleReset} 
+            onImport={handleImport} 
+            getCurrentState={() => ({ industry, difficulty, scenario, blocks, mentorMessages, theme })}
+            theme={theme}
+          />
+          <div className="flex-1 relative overflow-hidden flex flex-col">
+            <Workspace 
+              scenario={scenario} 
+              blocks={blocks} 
+              setBlocks={setBlocks} 
+              onUpdateScenario={s => setScenario(s)} 
+              theme={theme} 
+              toggleTheme={toggleTheme} 
+              onReset={handleReset} 
+            />
+            <Mentor 
+              scenario={scenario} 
+              blocks={blocks} 
+              messages={mentorMessages} 
+              setMessages={setMentorMessages} 
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

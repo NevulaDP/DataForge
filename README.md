@@ -1,3 +1,4 @@
+
 # DataForge: The Data Analyst Flight Simulator
 
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org/)
@@ -15,7 +16,7 @@ Standard data science projects often rely on static, over-cleaned datasets. Data
 1.  **On-Demand Forging**: Select an industry (Fintech, SaaS, Logistics, etc.) and difficulty to generate a unique business case.
 2.  **Synthetic Relational Data**: Generates 10k+ rows of realistic, messy data with maintained relational integrity (Star Schemas, Fact/Dimension tables).
 3.  **In-Browser Execution**: A full Python (Pandas/Matplotlib) and SQL environment running entirely via WebAssembly—no backend required.
-4.  **AI Mentorship**: A Socratic mentor powered by Gemini 3 Pro that guides strategy without providing direct answers.
+4.  **AI Mentorship**: A Socratic mentor powered by Gemini 3 Flash that guides strategy without providing direct answers.
 
 ## Key Features
 
