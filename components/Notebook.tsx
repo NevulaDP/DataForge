@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Scenario, NotebookBlock } from '../types';
-import { Play, Trash2, Loader2, AlertCircle, Terminal, Database, Edit3, Eye, Code2, FileText, Settings2 } from 'lucide-react';
+import { Play, Trash2, Loader2, AlertCircle, Terminal, Database, Edit3, Eye, Plus, Type as TypeIcon } from 'lucide-react';
 import { executeCode, initEngines, getDynamicSymbols } from '../codeExecutionService';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from "@codemirror/view";
 import { EditorState, Extension } from "@codemirror/state";
@@ -130,24 +130,65 @@ const CodeEditor: React.FC<{
       if (value !== currentDoc) { viewRef.current.dispatch({ changes: { from: 0, to: currentDoc.length, insert: value } }); }
     }
   }, [value]);
-  return <div ref={editorRef} className={`rounded-2xl overflow-hidden border-2 transition-all ${theme === 'dark' ? 'border-slate-800/80 bg-slate-900/50' : 'border-slate-200/80 bg-white'}`} />;
+  return <div ref={editorRef} className={`rounded-[24px] overflow-hidden border-2 transition-all ${theme === 'dark' ? 'border-slate-800/80 bg-slate-900/50' : 'border-slate-200/80 bg-white'}`} />;
 };
 
 const Toggle = ({ label, active, onChange }: { label: string, active: boolean, onChange: (v: boolean) => void }) => (
   <button 
     onClick={() => onChange(!active)}
-    className={`flex items-center space-x-2 px-3 py-1.5 rounded-xl border transition-all text-[9px] font-black uppercase tracking-widest ${
+    className={`flex items-center space-x-3 px-3 py-1.5 rounded-full border transition-all text-[9px] font-black uppercase tracking-widest ${
       active 
-        ? 'bg-blue-600/10 border-blue-500/30 text-blue-500' 
-        : 'bg-slate-100 dark:bg-slate-800/50 border-transparent text-slate-400 dark:text-slate-600 hover:text-slate-500'
+        ? 'bg-blue-600/10 border-blue-500/20 text-blue-500' 
+        : 'bg-slate-100 dark:bg-slate-800/50 border-transparent text-slate-400 dark:text-slate-600'
     }`}
   >
     <span>{label}</span>
-    <div className={`w-5 h-2.5 rounded-full relative transition-colors ${active ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
-      <div className={`absolute top-0.5 w-1.5 h-1.5 bg-white rounded-full transition-transform ${active ? 'left-3' : 'left-0.5'}`} />
+    <div className={`w-8 h-4 rounded-full relative transition-colors ${active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+      <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${active ? 'translate-x-4' : 'translate-x-0'}`} />
     </div>
   </button>
 );
+
+const AddBlockSeparator = ({ onAdd }: { onAdd: (type: 'text' | 'python' | 'sql') => void }) => {
+  return (
+    <div className="group relative h-12 flex items-center justify-center -my-6 z-20">
+      {/* Subtle Decorative Line */}
+      <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent opacity-10 group-hover:opacity-40 transition-all duration-700" />
+      
+      {/* Tool Selection Pills */}
+      <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto z-30">
+        <button
+          onClick={() => onAdd('text')}
+          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
+        >
+          <TypeIcon className="w-3.5 h-3.5" />
+          <span>+ Insight</span>
+        </button>
+        <button
+          onClick={() => onAdd('python')}
+          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
+        >
+          <Terminal className="w-3.5 h-3.5" />
+          <span>+ Python</span>
+        </button>
+        <button
+          onClick={() => onAdd('sql')}
+          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
+        >
+          <Database className="w-3.5 h-3.5" />
+          <span>+ SQL</span>
+        </button>
+      </div>
+
+      {/* Simplified Persistent Node */}
+      <div className="absolute transition-all duration-500 group-hover:opacity-0 group-hover:scale-50 pointer-events-none">
+        <div className="relative w-8 h-8 rounded-full bg-white dark:bg-[#0f172a] border-2 border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-lg transition-transform group-hover:rotate-90">
+          <Plus className="w-4 h-4 text-blue-500" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenario, theme }) => {
   const [executingId, setExecutingId] = useState<string | null>(null);
@@ -161,6 +202,26 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
     }
   }, [scenario.id]);
   
+  const addBlockAt = useCallback((index: number, type: 'text' | 'python' | 'sql') => {
+    const newBlock: NotebookBlock = {
+      id: Math.random().toString(36).substr(2, 9),
+      type: type === 'text' ? 'text' : 'code',
+      content: '',
+      language: type === 'text' ? undefined : (type as 'python' | 'sql'),
+      includeInReport: true, 
+      includeCodeInReport: false,
+      includeOutputInReport: true
+    };
+    setBlocks(prev => {
+      const copy = [...prev];
+      copy.splice(index, 0, newBlock);
+      return copy;
+    });
+    if (type === 'text') {
+      setEditingTextId(newBlock.id);
+    }
+  }, [setBlocks]);
+
   const updateBlock = useCallback((id: string, updates: Partial<NotebookBlock>) => { 
     setBlocks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b)); 
   }, [setBlocks]);
@@ -187,114 +248,120 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-12 space-y-16 pb-64 transition-all">
-      {blocks.map((block) => (
-        <div key={block.id} className="group relative animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="absolute -left-16 top-4 opacity-0 group-hover:opacity-100 transition-all z-10">
-             <button onMouseDown={() => removeBlock(block.id)} className="p-3 text-slate-400 hover:text-rose-500 transition-colors bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl" title="Remove block"><Trash2 className="w-5 h-5" /></button>
-          </div>
-          {block.type === 'text' ? (
-            <div className="space-y-4">
-               <div className="flex items-center justify-between px-2">
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-3 text-xs font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">
-                    <Edit3 className="w-4 h-4" />
-                    <span>Narrative Context</span>
+    <div className="max-w-5xl mx-auto p-12 space-y-6 pb-64 transition-all">
+      <AddBlockSeparator onAdd={(type) => addBlockAt(0, type)} />
+      
+      {blocks.map((block, index) => (
+        <React.Fragment key={block.id}>
+          <div className="group relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="absolute -left-14 top-2 opacity-0 group-hover:opacity-100 transition-all z-10">
+               <button onMouseDown={() => removeBlock(block.id)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors bg-white dark:bg-[#0f172a] rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl" title="Remove block"><Trash2 className="w-4 h-4" /></button>
+            </div>
+            {block.type === 'text' ? (
+              <div className="space-y-4">
+                 <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-3 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+                      <Edit3 className="w-4 h-4" />
+                      <span>ANALYTICAL INSIGHT</span>
+                    </div>
+                    <Toggle 
+                      label="Show in Report" 
+                      active={block.includeInReport !== false} 
+                      onChange={(v) => updateBlock(block.id, { includeInReport: v })} 
+                    />
                   </div>
-                  <Toggle 
-                    label="Show in Report" 
-                    active={block.includeInReport !== false} 
-                    onChange={(v) => updateBlock(block.id, { includeInReport: v })} 
-                  />
+                  {editingTextId === block.id ? (
+                    <button onMouseDown={(e) => { e.preventDefault(); setEditingTextId(null); }} className="flex items-center space-x-2 text-slate-400 hover:text-blue-500 text-[10px] font-black uppercase tracking-widest"><Eye className="w-4 h-4" /><span>Preview</span></button>
+                  ) : (
+                    <button onMouseDown={(e) => { e.preventDefault(); setEditingTextId(block.id); }} className="flex items-center space-x-2 text-slate-400 hover:text-blue-500 text-[10px] font-black uppercase tracking-widest"><Edit3 className="w-4 h-4" /><span>Edit</span></button>
+                  )}
                 </div>
                 {editingTextId === block.id ? (
-                  <button onMouseDown={(e) => { e.preventDefault(); setEditingTextId(null); }} className="flex items-center space-x-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 px-6 py-2 rounded-xl text-xs font-black tracking-[0.2em] transition-all border border-blue-500/20"><Eye className="w-4 h-4" /><span>PREVIEW</span></button>
+                  <div onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { setEditingTextId(null); } }}>
+                    <CodeEditor value={block.content} onChange={(val) => updateBlock(block.id, { content: val })} language="markdown" theme={theme} autoFocus onRun={() => setEditingTextId(null)} />
+                  </div>
                 ) : (
-                  <button onMouseDown={(e) => { e.preventDefault(); setEditingTextId(block.id); }} className="flex items-center space-x-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-600 px-6 py-2 rounded-xl text-xs font-black tracking-[0.2em] transition-all"><Edit3 className="w-4 h-4" /><span>EDIT</span></button>
+                  <div onMouseDown={() => setEditingTextId(block.id)} className={`markdown-preview min-h-[4rem] px-10 py-8 rounded-[40px] cursor-text transition-all border-2 border-transparent ${theme === 'dark' ? 'text-slate-200 bg-[#0f172a]/40 hover:bg-[#0f172a]/60 hover:border-slate-800 shadow-inner' : 'text-slate-800 bg-white hover:bg-slate-50 hover:border-slate-200'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content) }} />
                 )}
               </div>
-              {editingTextId === block.id ? (
-                <div onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { setEditingTextId(null); } }}>
-                  <CodeEditor value={block.content} onChange={(val) => updateBlock(block.id, { content: val })} language="markdown" theme={theme} autoFocus onRun={() => setEditingTextId(null)} />
-                </div>
-              ) : (
-                <div onMouseDown={() => setEditingTextId(block.id)} className={`markdown-preview min-h-[4rem] px-8 py-6 rounded-[32px] cursor-text transition-all border-2 border-transparent ${theme === 'dark' ? 'text-slate-200 bg-slate-900/20 hover:bg-slate-900/40 hover:border-slate-800/50 shadow-inner' : 'text-slate-800 bg-white hover:bg-slate-50 hover:border-slate-200/50'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(block.content) }} />
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center space-x-3 text-xs font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">
-                    {block.language === 'python' ? <Terminal className="w-4 h-4" /> : <Database className="w-4 h-4" />}
-                    <span>{block.language} environment</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Toggle 
-                      label="Report Code" 
-                      active={block.includeCodeInReport || false} 
-                      onChange={(v) => updateBlock(block.id, { includeCodeInReport: v })} 
-                    />
-                    <Toggle 
-                      label="Report Result" 
-                      active={block.includeOutputInReport !== false} 
-                      onChange={(v) => updateBlock(block.id, { includeOutputInReport: v })} 
-                    />
-                  </div>
-                </div>
-                <button onClick={() => runBlock(block.id)} disabled={executingId === block.id} className="flex items-center space-x-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-6 py-2.5 rounded-xl text-xs font-black tracking-[0.2em] transition-all disabled:opacity-50 border border-emerald-500/20 shadow-lg shadow-emerald-500/5 active:scale-95">
-                  {executingId === block.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                  <span>EXECUTE</span>
-                </button>
-              </div>
-              <CodeEditor value={block.content} onChange={(val) => updateBlock(block.id, { content: val })} onRun={() => runBlock(block.id)} language={block.language!} theme={theme} />
-              {block.output && (
-                <div className="bg-white dark:bg-[#0f172a]/40 border-2 border-slate-100 dark:border-slate-800/80 rounded-[32px] overflow-hidden mt-8 shadow-2xl shadow-black/[0.03] dark:shadow-none animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="flex border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-950/40">
-                    <div className="px-8 py-3.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">Console Output</div>
-                  </div>
-                  <div className="p-8 overflow-x-auto max-h-[600px] scrollbar-hide space-y-6">
-                    {block.output.logs && block.output.logs.trim().length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2 text-[10px] font-black text-slate-400/50 dark:text-slate-600 uppercase tracking-[0.2em]"><Code2 className="w-3 h-3"/><span>Standard Output</span></div>
-                        <pre className="text-slate-500 dark:text-slate-400 text-sm font-mono whitespace-pre-wrap leading-relaxed border-l-2 border-slate-200 dark:border-slate-800 pl-4">{block.output.logs}</pre>
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      {block.output.logs && block.output.logs.trim().length > 0 && (
-                        <div className="flex items-center space-x-2 text-[10px] font-black text-blue-500/50 dark:text-blue-600 uppercase tracking-[0.2em]"><Terminal className="w-3 h-3"/><span>Final Expression Result</span></div>
-                      )}
-                      {block.output.type === 'error' ? (
-                        <div className="flex items-start space-x-4 text-rose-500 text-sm font-bold"><AlertCircle className="w-5 h-5 shrink-0 mt-0.5" /><pre className="font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre></div>
-                      ) : block.output.type === 'table' ? (
-                        <table className="w-full text-left text-sm border-collapse min-w-[600px]">
-                          <thead>
-                            <tr className="border-b-2 border-slate-200 dark:border-slate-800">
-                              {block.output.data.length > 0 && Object.keys(block.output.data[0]).map(k => (<th key={k} className="px-4 py-3 text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.2em]">{k}</th>))}
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                            {block.output.data.slice(0, 15).map((row: any, i: number) => (
-                              <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">{Object.values(row).map((v: any, j) => (<td key={j} className="px-4 py-3 text-slate-600 dark:text-slate-400 font-mono whitespace-nowrap">{v?.toString() ?? 'null'}</td>))}</tr>
-                            ))}
-                            {block.output.data.length > 15 && (<tr><td colSpan={Object.keys(block.output.data[0]).length} className="px-4 py-4 text-slate-400 italic text-sm font-medium bg-slate-50/30 dark:bg-transparent">... results truncated. showing 15 of {block.output.data.length} records.</td></tr>)}
-                          </tbody>
-                        </table>
-                      ) : block.output.type === 'chart' ? (
-                        <div className="flex flex-col items-center space-y-4">
-                          <div className="bg-white/90 dark:bg-slate-800/20 p-4 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-inner"><img src={block.output.data} alt="Data Visualization" className="max-w-full h-auto rounded-xl" /></div>
-                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">Matplotlib Generated Visual</p>
-                        </div>
-                      ) : (
-                        <pre className="text-slate-700 dark:text-slate-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre>
-                      )}
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-3 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+                      {block.language === 'sql' ? <Database className="w-4 h-4" /> : <Terminal className="w-4 h-4" />}
+                      <span>{block.language === 'sql' ? 'SQL' : 'PYTHON'}</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Toggle 
+                        label="Report Code" 
+                        active={block.includeCodeInReport || false} 
+                        onChange={(v) => updateBlock(block.id, { includeCodeInReport: v })} 
+                      />
+                      <Toggle 
+                        label="Report Result" 
+                        active={block.includeOutputInReport !== false} 
+                        onChange={(v) => updateBlock(block.id, { includeOutputInReport: v })} 
+                      />
                     </div>
                   </div>
+                  <button 
+                    onClick={() => runBlock(block.id)} 
+                    disabled={executingId === block.id} 
+                    className="flex items-center space-x-2 px-6 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border border-emerald-500/20 active:scale-95 disabled:opacity-50"
+                  >
+                    {executingId === block.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                    <span>Execute</span>
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+                <CodeEditor value={block.content} onChange={(val) => updateBlock(block.id, { content: val })} onRun={() => runBlock(block.id)} language={block.language!} theme={theme} />
+                {block.output && (
+                  <div className="bg-white dark:bg-[#0c1222] border-2 border-slate-100 dark:border-slate-800 rounded-[32px] overflow-hidden mt-6 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                    <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                      <div className="px-8 py-3 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">Console Output</div>
+                    </div>
+                    <div className="p-8 overflow-x-auto max-h-[500px] scrollbar-hide space-y-6">
+                      {block.output.logs && block.output.logs.trim().length > 0 && (
+                        <div className="space-y-2">
+                          <pre className="text-slate-500 dark:text-slate-400 text-sm font-mono whitespace-pre-wrap leading-relaxed border-l-2 border-slate-200 dark:border-slate-800 pl-4">{block.output.logs}</pre>
+                        </div>
+                      )}
+                      <div className="space-y-4">
+                        {block.output.type === 'error' ? (
+                          <div className="flex items-start space-x-3 text-rose-500 text-sm font-bold bg-rose-500/5 p-4 rounded-2xl border border-rose-500/10"><AlertCircle className="w-5 h-5 shrink-0" /><pre className="font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre></div>
+                        ) : block.output.type === 'table' ? (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse font-mono">
+                              <thead>
+                                <tr className="border-b-2 border-slate-100 dark:border-slate-800">
+                                  {block.output.data.length > 0 && Object.keys(block.output.data[0]).map(k => (<th key={k} className="px-4 py-3 text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">{k}</th>))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                {block.output.data.slice(0, 15).map((row: any, i: number) => (
+                                  <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">{Object.values(row).map((v: any, j) => (<td key={j} className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{v?.toString() ?? 'null'}</td>))}</tr>
+                                ))}
+                                {block.output.data.length > 15 && (<tr><td colSpan={Object.keys(block.output.data[0]).length} className="px-4 py-4 text-slate-400 italic font-medium">Results truncated ({block.output.data.length} total)</td></tr>)}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : block.output.type === 'chart' ? (
+                          <div className="flex flex-col items-center p-4">
+                            <img src={block.output.data} alt="Data Visualization" className="max-w-full h-auto rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800" />
+                          </div>
+                        ) : (
+                          <pre className="text-slate-700 dark:text-slate-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <AddBlockSeparator onAdd={(type) => addBlockAt(index + 1, type)} />
+        </React.Fragment>
       ))}
     </div>
   );

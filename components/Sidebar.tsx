@@ -2,7 +2,9 @@
 import React, { useState, useRef } from 'react';
 import { Scenario, SessionState, NotebookBlock } from '../types';
 import Logo from './Logo';
-import { Target, CheckCircle2, Circle, ChevronLeft, ChevronRight, FileText, Save, FolderOpen, Power } from 'lucide-react';
+import { Target, CheckCircle2, Circle, ChevronLeft, ChevronRight, Save, FolderOpen, Power, Printer, Loader2 } from 'lucide-react';
+// @ts-ignore
+import { marked } from "marked";
 
 interface Props {
   scenario: Scenario;
@@ -14,81 +16,307 @@ interface Props {
 
 const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState, theme }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const generateMarkdownReport = (state: SessionState) => {
-    let md = `# Strategic Analysis: ${scenario.companyName}\n\n`;
-    md += `**Sector:** ${scenario.industry}  \n`;
-    md += `**Report Date:** ${new Date().toLocaleDateString()}\n\n`;
-    
-    md += `## 1. Executive Briefing\n`;
-    md += `${scenario.problemStatement}\n\n`;
-    
-    md += `## 2. Mission Objectives\n`;
-    scenario.objectives.forEach(obj => {
-      md += `- [${obj.completed ? 'x' : ' '}] ${obj.task}\n`;
-    });
-    md += `\n---\n\n`;
+  const parseMd = (content: string) => {
+    try {
+      // @ts-ignore
+      return marked.parse(content || "");
+    } catch (e) {
+      return content || "";
+    }
+  };
 
+  const getReportHtml = (state: SessionState) => {
+    let blocksHtml = '';
     state.blocks.forEach((block: NotebookBlock) => {
-      if (block.type === 'text') {
-        if (block.includeInReport !== false) {
-          md += `${block.content}\n\n`;
-        }
+      if (block.type === 'text' && block.includeInReport !== false) {
+        blocksHtml += `<div class="section-content">${parseMd(block.content)}</div>`;
       } else if (block.type === 'code') {
         if (block.includeCodeInReport) {
-          md += `### Analytical Logic (${block.language?.toUpperCase()})\n`;
-          md += `\`\`\`${block.language}\n${block.content}\n\`\`\`\n\n`;
+          blocksHtml += `
+            <div class="code-container">
+              <div class="label">LOGIC CELL: ${block.language?.toUpperCase()}</div>
+              <pre class="code-block">${block.content}</pre>
+            </div>
+          `;
         }
 
         if (block.output && block.includeOutputInReport !== false) {
           const out = block.output;
-          
-          if (out.logs && out.logs.trim()) {
-            md += `\n\`\`\`\n${out.logs.trim()}\n\`\`\`\n\n`;
-          }
-
           if (out.type === 'table' && Array.isArray(out.data) && out.data.length > 0) {
-            const data = out.data;
-            const headers = Object.keys(data[0]);
-            md += `| ${headers.join(' | ')} |\n`;
-            md += `| ${headers.map(() => '---').join(' | ')} |\n`;
-            data.slice(0, 15).forEach(row => {
-              md += `| ${headers.map(h => {
-                const val = row[h];
-                return val === null || val === undefined ? '*null*' : String(val).replace(/\|/g, '\\|');
-              }).join(' | ')} |\n`;
-            });
-            if (data.length > 15) {
-              md += `\n*Showing top 15 of ${data.length} total records.*\n\n`;
-            } else {
-              md += `\n`;
-            }
+            const headers = Object.keys(out.data[0]);
+            blocksHtml += `
+              <div class="table-container">
+                <div class="label">ANALYTICAL OUTPUT</div>
+                <table>
+                  <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                  </thead>
+                  <tbody>
+                    ${out.data.slice(0, 30).map(row => `
+                      <tr>${headers.map(h => `<td>${row[h] === null ? 'null' : row[h]}</td>`).join('')}</tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `;
           } else if (out.type === 'chart') {
-            md += `![Data Visualization](${out.data})\n\n`;
-          } else if (out.type === 'text' && out.data && !out.logs) {
-            md += `${out.data}\n\n`;
+            blocksHtml += `
+              <div class="chart-container">
+                <div class="label">VISUAL EVIDENCE</div>
+                <div style="text-align: center; margin: 20px 0;">
+                  <img src="${out.data}" style="max-width: 90%; border-radius: 8px; border: 1px solid #e2e8f0;" />
+                </div>
+              </div>
+            `;
+          } else if (out.type === 'text') {
+            blocksHtml += `<div class="section-content">${parseMd(String(out.data))}</div>`;
           }
         }
       }
     });
 
-    md += `\n---\n*Report generated via DataForge Strategy Protocol*`;
-    return md;
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>${scenario.companyName} - Strategic Briefing</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+          
+          @page {
+            margin: 1in;
+          }
+
+          body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #ffffff; 
+            color: #1a202c; 
+            line-height: 1.5; 
+            font-size: 10pt; 
+            max-width: 8.5in;
+            margin: 0 auto;
+            -webkit-print-color-adjust: exact;
+          }
+
+          .header-meta { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 8pt; 
+            color: #94a3b8; 
+            text-transform: uppercase; 
+            font-weight: 800;
+            letter-spacing: 0.25em;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+            margin-bottom: 50px;
+          }
+
+          h1 { 
+            font-size: 30pt; 
+            font-weight: 800; 
+            color: #0f172a; 
+            margin-bottom: 10px; 
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+          }
+
+          .subtitle {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 60px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+          }
+
+          h2 { 
+            font-size: 13pt; 
+            font-weight: 800; 
+            color: #0f172a; 
+            margin: 40px 0 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.2em;
+            display: flex;
+            align-items: center;
+          }
+          
+          h2::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+            margin-left: 15px;
+          }
+
+          .section-content { 
+            margin-bottom: 25px; 
+            color: #334155; 
+          }
+
+          .section-content p { 
+            margin-bottom: 15px; 
+            text-align: justify;
+            hyphens: auto;
+          }
+
+          .objective { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 8px; 
+            font-size: 9pt;
+            font-weight: 600;
+            color: #475569;
+          }
+          
+          .check { 
+            width: 12px; 
+            height: 12px; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 3px;
+            margin-right: 12px; 
+            display: inline-block;
+            flex-shrink: 0;
+          }
+          .check.done { 
+            background: #3b82f6; 
+            border-color: #3b82f6;
+          }
+
+          .label { 
+            font-size: 7pt; 
+            font-weight: 800; 
+            color: #94a3b8; 
+            margin-bottom: 8px; 
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+          }
+
+          .code-block { 
+            background: #f8fafc; 
+            color: #1e293b; 
+            padding: 20px; 
+            border-radius: 8px; 
+            font-family: 'JetBrains Mono', monospace; 
+            font-size: 8.5pt; 
+            margin-bottom: 30px; 
+            white-space: pre-wrap;
+            border: 1px solid #e2e8f0;
+            line-height: 1.4;
+          }
+
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 30px; 
+            font-size: 8.5pt; 
+          }
+          
+          th { 
+            border-bottom: 2px solid #f1f5f9; 
+            padding: 10px 8px; 
+            text-align: left; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+            color: #64748b;
+          }
+          td { 
+            padding: 8px; 
+            border-bottom: 1px solid #f8fafc; 
+            word-break: break-all; 
+            color: #334155;
+            font-family: 'JetBrains Mono', monospace;
+          }
+
+          .footer { 
+            margin-top: 80px; 
+            padding-top: 25px; 
+            border-top: 1px solid #f1f5f9; 
+            font-size: 7pt; 
+            font-weight: 700;
+            color: #94a3b8; 
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.4em;
+          }
+
+          @media print {
+            body { 
+              padding: 0; 
+              margin: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header-meta">
+          <span>Strategic Briefing</span>
+          <span>REF: ${Math.floor(Date.now()/10000)}</span>
+          <span>${new Date().toLocaleDateString()}</span>
+        </div>
+
+        <h1>${scenario.companyName}</h1>
+        <div class="subtitle">${scenario.industry} Sector : Intel Report</div>
+
+        <h2>I. Problem Definition</h2>
+        <div class="section-content">${parseMd(scenario.problemStatement)}</div>
+
+        <h2>II. Operational Milestones</h2>
+        <div class="section-content">
+          ${scenario.objectives.map(obj => `
+            <div class="objective">
+              <div class="check ${obj.completed ? 'done' : ''}"></div>
+              <span>${obj.task}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <h2>III. Quantitative Evidence</h2>
+        ${blocksHtml}
+
+        <div class="footer">
+          DATAFORGE ANALYTICAL PROTOCOL 4.0 // CONFIDENTIAL
+        </div>
+        
+        <script>
+          window.onload = () => {
+            setTimeout(() => {
+              window.print();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
   };
 
-  const handleExportReport = () => {
-    const state = getCurrentState();
-    const md = generateMarkdownReport(state);
-    const blob = new Blob([md], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${scenario.companyName.replace(/\s+/g, '_')}_Strategic_Report.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleExportPDF = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+
+    try {
+      const state = getCurrentState();
+      const reportHtml = getReportHtml(state);
+      const printWindow = window.open('', '_blank', 'width=1000,height=800');
+      
+      if (!printWindow) {
+        throw new Error("Popup blocked. Please allow popups to export your report.");
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(reportHtml);
+      printWindow.document.close();
+
+      setIsExporting(false);
+    } catch (err: any) {
+      console.error("PDF Export failed:", err);
+      alert(err.message || "Failed to generate mission report.");
+      setIsExporting(false);
+    }
   };
 
   const handleExportFile = () => {
@@ -127,44 +355,49 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
   };
 
   return (
-    <aside className={`relative h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-500 ease-in-out z-[60] ${isCollapsed ? 'w-24' : 'w-[440px]'}`}>
+    <aside className={`relative h-full bg-white dark:bg-[#0c1222] border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-500 ease-in-out z-[60] ${isCollapsed ? 'w-24' : 'w-[440px]'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".flight,.json" />
       
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)} 
-        className="absolute -right-4 top-12 z-[70] flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full text-white shadow-2xl hover:bg-blue-500 transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-slate-900"
+        className="absolute -right-4 top-12 z-[70] flex items-center justify-center w-8 h-8 bg-[#3b82f6] rounded-full text-white shadow-2xl hover:bg-blue-500 transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-[#0c1222]"
       >
         {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
       </button>
 
-      <div className={`border-b border-slate-100 dark:border-slate-800/50 flex items-center transition-all ${isCollapsed ? 'p-6 justify-center' : 'p-10 space-x-5'}`}>
+      <div className={`flex items-center transition-all ${isCollapsed ? 'p-6 justify-center' : 'p-10 space-x-4'}`}>
         <Logo size={isCollapsed ? "sm" : "md"} theme={theme} />
-        {!isCollapsed && <h2 className="font-bold tracking-[0.3em] uppercase text-sm text-slate-500 dark:text-slate-400">Mission Hub</h2>}
+        {!isCollapsed && (
+          <div className="flex flex-col">
+            <h2 className="font-black tracking-[0.4em] uppercase text-xs text-slate-500 dark:text-slate-400">Mission Hub</h2>
+            <h1 className="font-black text-lg tracking-widest uppercase text-slate-900 dark:text-white -mt-1">DATAFORGE</h1>
+          </div>
+        )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto scrollbar-hide transition-all ${isCollapsed ? 'p-0' : 'p-10'} space-y-12`}>
+      <div className={`flex-1 overflow-y-auto scrollbar-hide transition-all ${isCollapsed ? 'p-0' : 'p-8 pt-0'} space-y-8`}>
         {!isCollapsed && (
           <>
-            <div className={`bg-slate-50 dark:bg-slate-950/40 rounded-[48px] border-2 border-slate-200 dark:border-slate-800/50 transition-all p-10 space-y-6`}>
-              <div className="text-[11px] text-slate-400 dark:text-slate-600 font-black uppercase tracking-[0.35em]">Organization</div>
-              <h3 className="text-3xl font-bold text-slate-900 dark:text-white leading-tight tracking-tight">{scenario.companyName}</h3>
-              <p className="text-base text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">{scenario.problemStatement}</p>
+            <div className={`bg-slate-50 dark:bg-[#0f172a] rounded-[32px] border-2 border-slate-200 dark:border-slate-800 transition-all p-8 space-y-4 shadow-sm`}>
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">Organization</div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{scenario.companyName}</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-semibold">{scenario.problemStatement}</p>
             </div>
 
-            <div className="space-y-8">
-              <div className="flex items-center text-slate-400 dark:text-slate-600 space-x-5">
-                <Target className="w-6 h-6" />
-                <h3 className="font-black text-xs uppercase tracking-[0.35em]">Objectives</h3>
+            <div className="space-y-6">
+              <div className="flex items-center text-slate-400 dark:text-slate-600 space-x-4">
+                <Target className="w-5 h-5" />
+                <h3 className="font-black text-[10px] uppercase tracking-[0.3em]">Objectives</h3>
               </div>
-              <div className="space-y-7 px-2">
+              <div className="space-y-5 px-1">
                 {scenario.objectives.map((obj) => (
-                  <div key={obj.id} className="flex items-start group relative space-x-5">
+                  <div key={obj.id} className="flex items-start group relative space-x-4">
                     {obj.completed ? (
-                      <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                     ) : (
-                      <Circle className="w-6 h-6 text-slate-300 dark:text-slate-800 shrink-0 mt-0.5 group-hover:text-slate-400 dark:group-hover:text-slate-600 transition-colors" />
+                      <Circle className="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5" />
                     )}
-                    <span className={`text-[15px] font-bold leading-relaxed transition-colors ${obj.completed ? 'text-slate-300 dark:text-slate-700 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`text-sm font-bold leading-relaxed transition-colors ${obj.completed ? 'text-slate-300 dark:text-slate-700 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
                       {obj.task}
                     </span>
                   </div>
@@ -175,44 +408,45 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
         )}
       </div>
 
-      <div className={`transition-all ${isCollapsed ? 'p-5 pb-10' : 'p-10 pt-0'} space-y-4`}>
+      <div className={`transition-all ${isCollapsed ? 'p-4 pb-10' : 'p-8 pt-0'} space-y-4`}>
         <div className={`flex transition-all ${isCollapsed ? 'flex-col space-y-4 items-center' : 'flex-col space-y-3'}`}>
-          {!isCollapsed && <div className="h-px w-full bg-slate-100 dark:bg-slate-800/50 mb-4" />}
+          {!isCollapsed && <div className="h-px w-full bg-slate-100 dark:bg-slate-800/50 mb-2" />}
           
           <button 
-            onClick={handleExportReport} 
-            className={`flex items-center justify-center bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-all border border-transparent shadow-lg shadow-emerald-600/10 active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-6 space-x-3'}`} 
-            title="Export Strategic Markdown Report"
+            onClick={handleExportPDF} 
+            disabled={isExporting}
+            className={`flex items-center justify-center bg-[#10b981] hover:bg-[#059669] disabled:bg-emerald-800 text-white rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
+            title="Export Strategic Report (PDF)"
           >
-            <FileText className="w-6 h-6 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.35em]">Export Report</span>}
+            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5 shrink-0" />}
+            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">{isExporting ? 'Synthesizing...' : 'Export PDF Report'}</span>}
           </button>
           
           <button 
             onClick={handleExportFile} 
-            className={`flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all border border-transparent shadow-lg shadow-blue-600/10 active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-6 space-x-3'}`} 
+            className={`flex items-center justify-center bg-[#3b82f6] hover:bg-blue-600 text-white rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
             title="Save Mission File"
           >
-            <Save className="w-6 h-6 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.35em]">Save Progress</span>}
+            <Save className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Save Progress</span>}
           </button>
 
           <button 
             onClick={handleImportClick} 
-            className={`flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full transition-all border border-transparent active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-6 space-x-3'}`} 
+            className={`flex items-center justify-center bg-slate-100 dark:bg-[#1e293b] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
             title="Load Mission File"
           >
-            <FolderOpen className="w-6 h-6 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.35em]">Load Mission</span>}
+            <FolderOpen className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Load Mission</span>}
           </button>
 
           <button 
             onClick={(e) => { e.stopPropagation(); onReset(); }} 
-            className={`flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-rose-500 hover:text-white text-slate-500 dark:text-slate-400 rounded-full transition-all border border-transparent active:scale-95 cursor-pointer group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-6 space-x-3'}`} 
+            className={`flex items-center justify-center bg-slate-100 dark:bg-[#1e293b] hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 text-slate-400 dark:text-slate-500 rounded-full transition-all border border-transparent shadow-lg active:scale-95 cursor-pointer group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
             title="End Mission"
           >
-            <Power className="w-6 h-6 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[10px] uppercase tracking-[0.35em]">Terminate Mission</span>}
+            <Power className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Terminate</span>}
           </button>
         </div>
       </div>

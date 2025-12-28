@@ -56,10 +56,10 @@ const Mentor: React.FC<Props> = ({ scenario, blocks, messages, setMessages }) =>
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative flex items-center justify-center w-20 h-20 bg-blue-600 hover:bg-blue-500 text-white rounded-[28px] shadow-[0_25px_50px_-12px_rgba(37,99,235,0.5)] transition-all duration-300 hover:scale-110 active:scale-95"
+          className="group relative flex items-center justify-center w-20 h-20 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-[0_25px_50px_-12px_rgba(37,99,235,0.5)] transition-all duration-300 hover:scale-110 active:scale-95"
         >
           <MessageSquare className="w-9 h-9" />
-          <span className="absolute -top-1 -right-1 bg-emerald-500 w-5 h-5 rounded-full border-4 border-white dark:border-slate-950 animate-pulse" />
+          <span className="absolute top-1 right-1 bg-emerald-500 w-5 h-5 rounded-full border-4 border-white dark:border-slate-950 animate-pulse" />
         </button>
       ) : (
         <div className="w-[520px] h-[780px] bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-[48px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-12 duration-300">
