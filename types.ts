@@ -1,19 +1,29 @@
 
 export type Industry = string;
+export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
 
 export interface DataColumn {
   name: string;
-  type: 'string' | 'number' | 'date' | 'boolean';
+  type: 'string' | 'float' | 'integer' | 'date' | 'boolean';
+  description?: string;
+  isPk?: boolean;
+}
+
+export interface DataTable {
+  name: string;
+  schema: DataColumn[];
+  data: Record<string, any>[];
+  isFactTable?: boolean; // Used to identify which table to scale to 10k+ rows
 }
 
 export interface Scenario {
   id: string;
   companyName: string;
   industry: Industry;
+  difficulty: Difficulty;
   problemStatement: string;
   objectives: Objective[];
-  schema: DataColumn[];
-  sampleData: Record<string, any>[];
+  tables: DataTable[];
 }
 
 export interface Objective {
@@ -32,8 +42,12 @@ export interface NotebookBlock {
   output?: {
     type: 'table' | 'chart' | 'text' | 'error';
     data: any;
+    logs?: string;
     summary?: string;
   };
+  includeCodeInReport?: boolean;
+  includeOutputInReport?: boolean;
+  includeInReport?: boolean;
 }
 
 export interface ChatMessage {
@@ -43,6 +57,7 @@ export interface ChatMessage {
 
 export interface SessionState {
   industry: Industry | null;
+  difficulty: Difficulty | null;
   scenario: Scenario | null;
   blocks: NotebookBlock[];
   mentorMessages: ChatMessage[];

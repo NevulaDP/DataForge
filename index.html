@@ -20,6 +20,15 @@
               slate: {
                 950: '#020617',
               }
+            },
+            keyframes: {
+              'gradient-move': {
+                '0%, 100%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+              }
+            },
+            animation: {
+              'gradient-move': 'gradient-move 3s ease infinite',
             }
           }
         }
@@ -28,11 +37,10 @@
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            transition: background-color 0.3s {ease, color 0.3s ease};
-            font-size: 16px; /* Increased base size */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 16px;
         }
         
-        /* Scrollbar styles */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -51,12 +59,10 @@
             border-radius: 10px;
         }
 
-        /* CodeMirror Custom Styles */
         .cm-editor { 
             height: auto; 
             min-height: 100px; 
             max-height: 500px;
-            /* Updated font-family and size to match the app */
             font-family: 'Plus Jakarta Sans', sans-serif !important; 
             font-size: 15px !important;
             font-weight: 500 !important;
@@ -83,7 +89,6 @@
         .cm-completionLabel { font-size: 13px !important; font-weight: 600 !important; }
         .cm-completionDetail { font-size: 11px !important; opacity: 0.6 !important; }
 
-        /* Markdown Preview Styling */
         .markdown-preview h1 { font-size: 1.875rem; font-weight: 800; margin-bottom: 1rem; }
         .markdown-preview h2 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; }
         .markdown-preview h3 { font-size: 1.25rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; }

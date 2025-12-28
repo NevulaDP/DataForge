@@ -1,25 +1,25 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Industry, Scenario, NotebookBlock, ChatMessage, SessionState } from './types';
+import { Industry, Scenario, NotebookBlock, ChatMessage, SessionState, Difficulty } from './types';
 import Onboarding from './components/Onboarding';
 import Workspace from './components/Workspace';
 import Sidebar from './components/Sidebar';
 import Mentor from './components/Mentor';
 import { generateScenario } from './geminiService';
 
-const SESSION_KEY = 'data_forge_session_v1';
+const SESSION_KEY = 'data_forge_session_v2';
 
 const App: React.FC = () => {
   const [industry, setIndustry] = useState<Industry | null>(null);
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
-  });
+  const [progress, setProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'dark');
   const [blocks, setBlocks] = useState<NotebookBlock[]>([
-    { id: '1', type: 'text', content: '# Mission Briefing\nWelcome, Analyst. Review the organizational context in the sidebar and begin your exploration below.' }
+    { id: '1', type: 'text', content: '# Strategic Briefing\nWelcome. Use the dataset explorer to understand your target sources and document your logic below.' }
   ]);
   const [mentorMessages, setMentorMessages] = useState<ChatMessage[]>([]);
 
@@ -29,31 +29,23 @@ const App: React.FC = () => {
       try {
         const state: SessionState = JSON.parse(saved);
         setIndustry(state.industry);
+        setDifficulty(state.difficulty || null);
         setScenario(state.scenario);
         setBlocks(state.blocks);
         setMentorMessages(state.mentorMessages);
         if (state.theme) setTheme(state.theme);
-      } catch (e) {
-        console.error("Failed to restore session", e);
-        localStorage.removeItem(SESSION_KEY);
-      }
+      } catch (e) { localStorage.removeItem(SESSION_KEY); }
     }
   }, []);
 
   useEffect(() => {
     if (scenario) {
-      const state: SessionState = {
-        industry,
-        scenario,
-        blocks,
-        mentorMessages,
-        theme
-      };
+      const state: SessionState = { industry, difficulty, scenario, blocks, mentorMessages, theme };
       localStorage.setItem(SESSION_KEY, JSON.stringify(state));
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
-  }, [industry, scenario, blocks, mentorMessages, theme]);
+  }, [industry, difficulty, scenario, blocks, mentorMessages, theme]);
 
   useEffect(() => {
     const root = window.document.body;
@@ -65,72 +57,70 @@ const App: React.FC = () => {
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
   const handleReset = useCallback(() => {
-    const confirmed = window.confirm("Terminate current mission? All progress will be cleared.");
-    if (confirmed) {
-      // Synchronized wipe to ensure Onboarding component mounts correctly
+    if (window.confirm("Terminate project? Progress will be erased.")) {
       setScenario(null);
       setIndustry(null);
-      setBlocks([{ id: '1', type: 'text', content: '# Mission Briefing\nWelcome, Analyst. Review the organizational context in the sidebar and begin your exploration below.' }]);
+      setDifficulty(null);
+      setBlocks([{ id: '1', type: 'text', content: '# Strategic Briefing\nWelcome. Documentation and analysis core initialized.' }]);
       setMentorMessages([]);
       setLoading(false);
       setError(null);
       localStorage.removeItem(SESSION_KEY);
-      window.scrollTo(0, 0);
     }
   }, []);
 
   const handleImport = useCallback((state: SessionState) => {
     setIndustry(state.industry);
+    setDifficulty(state.difficulty);
     setScenario(state.scenario);
     setBlocks(state.blocks);
     setMentorMessages(state.mentorMessages);
     if (state.theme) setTheme(state.theme);
   }, []);
 
-  const getCurrentState = useCallback((): SessionState => ({
-    industry,
-    scenario,
-    blocks,
-    mentorMessages,
-    theme
-  }), [industry, scenario, blocks, mentorMessages, theme]);
-
-  const handleUpdateScenario = useCallback((updatedScenario: Scenario) => {
-    setScenario(updatedScenario);
-  }, []);
-
-  const loadingMessages = [
-    "SYNTHESIZING_CORE...",
-    "MAPPING_DATA_STRUCTURES...",
-    "UPDATING_OPERATIONAL_LOGS...",
-    "CALIBRATING_SENSORS..."
-  ];
-
-  const handleStart = async (selectedIndustry: Industry) => {
+  const handleStart = async (selectedIndustry: Industry, selectedDifficulty: Difficulty) => {
     setIndustry(selectedIndustry);
+    setDifficulty(selectedDifficulty);
     setLoading(true);
     setError(null);
-    setLoadingStep(0);
-    
-    const stepInterval = setInterval(() => {
-      setLoadingStep(prev => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
-    }, 2500);
+    setProgress(5);
+    setLoadingMessage("Calibrating Neural Core");
+
+    // Artificial progress steering while API is working
+    const progressTimer = setInterval(() => {
+      setProgress(prev => {
+        if (prev < 30) return prev + 2;
+        if (prev < 60) {
+           setLoadingMessage("Synthesizing Relational Schema");
+           return prev + 1;
+        }
+        if (prev < 85) {
+           setLoadingMessage("Populating Analytical Fragments");
+           return prev + 0.5;
+        }
+        setLoadingMessage("Optimizing Query Cache");
+        return prev; // Stay at 85 until done
+      });
+    }, 300);
 
     try {
-      const newScenario = await generateScenario(selectedIndustry);
-      setScenario(newScenario);
-      setMentorMessages([
-        { role: 'assistant', content: `Analyst, I'm your Senior Mentor for the ${newScenario.companyName} project. Review the objectives in your briefing and start by exploring the dataset structure. I'm here if the noise becomes overwhelming.` }
-      ]);
+      const newScenario = await generateScenario(selectedIndustry, selectedDifficulty);
+      setProgress(100);
+      setLoadingMessage("Simulation Ready");
+      
+      // Short delay for the user to see 100%
+      setTimeout(() => {
+        setScenario(newScenario);
+        setMentorMessages([{ role: 'assistant', content: `The ${newScenario.companyName} data environment is now live. I've logged our primary objectives in the Mission Hub. How would you like to approach this investigation?` }]);
+        setLoading(false);
+        clearInterval(progressTimer);
+      }, 800);
     } catch (err: any) {
-      console.error("Initialization Error:", err);
-      setError(err.message || "The analytical core failed to initialize. Please check your connection and retry the sequence.");
+      setError(err.message || "Initialization failed.");
       setIndustry(null);
       setScenario(null);
       setLoading(false);
-    } finally {
-      clearInterval(stepInterval);
-      setLoading(false);
+      clearInterval(progressTimer);
     }
   };
 
@@ -138,40 +128,29 @@ const App: React.FC = () => {
     return (
       <Onboarding 
         onSelect={handleStart} 
-        onImport={handleImport}
+        onImport={handleImport} 
         loading={loading} 
-        loadingMessage={loadingMessages[loadingStep]}
-        error={error}
-        theme={theme}
-        toggleTheme={toggleTheme}
+        loadingMessage={loadingMessage} 
+        progress={progress}
+        error={error} 
+        theme={theme} 
+        toggleTheme={toggleTheme} 
       />
     );
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden animate-in fade-in duration-1000">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
       <Sidebar 
         scenario={scenario} 
         onReset={handleReset} 
-        onImport={handleImport}
-        getCurrentState={getCurrentState}
+        onImport={handleImport} 
+        getCurrentState={() => ({ industry, difficulty, scenario, blocks, mentorMessages, theme })}
+        theme={theme}
       />
       <div className="flex-1 relative overflow-hidden flex flex-col">
-        <Workspace 
-          scenario={scenario} 
-          blocks={blocks} 
-          setBlocks={setBlocks} 
-          onUpdateScenario={handleUpdateScenario}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          onReset={handleReset}
-        />
-        <Mentor 
-          scenario={scenario} 
-          blocks={blocks} 
-          messages={mentorMessages}
-          setMessages={setMentorMessages}
-        />
+        <Workspace scenario={scenario} blocks={blocks} setBlocks={setBlocks} onUpdateScenario={s => setScenario(s)} theme={theme} toggleTheme={toggleTheme} onReset={handleReset} />
+        <Mentor scenario={scenario} blocks={blocks} messages={mentorMessages} setMessages={setMentorMessages} />
       </div>
     </div>
   );

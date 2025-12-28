@@ -24,7 +24,11 @@ const Workspace: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScena
       id: Math.random().toString(36).substr(2, 9),
       type,
       content: '',
-      language: type === 'code' ? (language || 'python') : undefined
+      language: type === 'code' ? (language || 'python') : undefined,
+      // Default report visibility settings
+      includeInReport: true, 
+      includeCodeInReport: false,
+      includeOutputInReport: true
     };
     setBlocks([...blocks, newBlock]);
     setIsCodePickerOpen(false);

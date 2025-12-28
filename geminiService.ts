@@ -1,8 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Industry, Scenario, NotebookBlock, ChatMessage } from "./types";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import { Industry, Scenario, NotebookBlock, ChatMessage, Difficulty, DataTable } from "./types";
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
   let lastError: any;
@@ -11,7 +9,8 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
       return await fn();
     } catch (error: any) {
       lastError = error;
-      const isRetriable = error?.status >= 500 || !error?.status || error.message?.toLowerCase().includes('fetch') || error.message?.includes('429');
+      const errorMsg = error.message?.toLowerCase() || '';
+      const isRetriable = error?.status >= 500 || !error?.status || errorMsg.includes('fetch') || errorMsg.includes('429');
       if (attempt < maxRetries && isRetriable) {
         const delay = Math.pow(2, attempt) * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -23,11 +22,7 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 2): Promise<T> {
   throw lastError;
 }
 
-/**
- * Procedurally augments the seed data to reach 10,000 rows.
- * Introduces realistic "messiness" like occasional nulls, outliers, and duplicates.
- */
-const augmentData = (seed: any[], targetRows: number = 10000): any[] => {
+const augmentSingleTable = (seed: any[], targetRows: number): any[] => {
   if (seed.length === 0) return [];
   const augmented = [...seed];
   const seedLength = seed.length;
@@ -35,77 +30,61 @@ const augmentData = (seed: any[], targetRows: number = 10000): any[] => {
 
   const remaining = targetRows - augmented.length;
   for (let i = 0; i < remaining; i++) {
-    const sourceRow = seed[i % seedLength];
+    const sourceRow = seed[Math.floor(Math.random() * seedLength)];
     const newRow = { ...sourceRow };
-    const messinessRoll = Math.random();
 
     for (const key of keys) {
       const val = newRow[key];
-      
-      // Inject messiness into ~3% of values
       if (Math.random() < 0.03) {
         if (Math.random() < 0.5) {
-          newRow[key] = null; // Missing values
+          newRow[key] = null;
         } else if (typeof val === 'number') {
-          newRow[key] = val * (Math.random() > 0.5 ? 10 : 0.01); // Outliers
+          newRow[key] = val * (Math.random() > 0.5 ? 1.5 : 0.7);
         }
         continue;
       }
-
-      // Standard variance for numeric values
       if (typeof val === 'number') {
-        const variance = 0.98 + Math.random() * 0.04; // 2% variance
+        const variance = 0.92 + Math.random() * 0.16; // Slight variance +/- 8%
         newRow[key] = Number((val * variance).toFixed(2));
-      } 
-      // Date shifting
-      else if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      } else if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const d = new Date(val);
-        d.setDate(d.getDate() + (Math.floor(Math.random() * 14) - 7));
+        d.setDate(d.getDate() + (Math.floor(Math.random() * 90) - 45)); // Shifting dates across a wider range
         newRow[key] = d.toISOString().split('T')[0];
       }
     }
-
-    // Occasional duplicated rows (1% chance)
-    if (messinessRoll < 0.01) {
-      augmented.push({ ...newRow });
-      i++; 
-    }
-    
-    if (augmented.length < targetRows) {
-      augmented.push(newRow);
-    }
+    augmented.push(newRow);
   }
-  return augmented.slice(0, targetRows);
+  return augmented;
 };
 
-export const generateScenario = async (industry: Industry): Promise<Scenario> => {
+export const generateScenario = async (industry: Industry, difficulty: Difficulty): Promise<Scenario> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const difficultyPrompt = {
+    beginner: "A single comprehensive dataset (flat file) with ~15 columns.",
+    intermediate: "2-3 related tables (e.g. transactions and users) allowing for JOIN operations.",
+    advanced: "A Star Schema with 1 central fact table and 2-3 dimension tables (e.g. sales, products, stores, calendar)."
+  }[difficulty];
+
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Generate a high-stakes, immersive data analysis scenario for an analyst in the ${industry} sector. 
+      contents: `Generate a high-stakes data analysis mission for an analyst in the ${industry} sector.
       
-      Narrative Diversity:
-      - Beyond standard BI: explore public health, environmental conservation, high-tech manufacturing, aerospace, or humanitarian aid.
-      - Create a specific, high-pressure strategic mission.
+      Difficulty Level: ${difficulty}
+      Data Structure Requirements: ${difficultyPrompt}
       
-      Data Quality & Challenge:
-      - The dataset should be "real-world messy." This means a realistic distribution of issues: some missing values (NaN), occasional extreme outliers, inconsistent casing in strings, or slightly malformed dates. 
-      - The goal is not a "cleaning project," but to force the analyst to apply basic data validation before deriving their BI/Strategic insights.
+      Schema Instructions:
+      - For each table, provide a name, schema (name, type, description, isPk), and sample data (20-30 rows).
+      - Ensure relational integrity (FKs) for intermediate/advanced missions.
+      - Descriptions should be neutral and factual.
       
-      Requirements:
-      1. Organization name: Realistic and immersive.
-      2. Problem statement: A complex challenge (e.g., "Predicting hospital bed shortages during a viral outbreak" or "Optimizing satellite power cycles based on historical telemetry").
-      3. 4 Objectives: Focus on synthesis, forecasting, risk assessment, and strategic recommendations.
-      4. Data: 100 rows of realistic sector-specific data including some "messy" records.
+      Mission Requirements:
+      1. Organization name.
+      2. Complex problem statement.
+      3. 4 Strategic objectives.
       
-      Return as JSON with the following structure:
-      {
-        "companyName": "string",
-        "problemStatement": "string",
-        "objectives": [{"id": "string", "task": "string"}],
-        "schema": [{"name": "string", "type": "string"}],
-        "sampleData": "A JSON STRINGIFIED ARRAY of 100 objects representing the data rows."
-      }`,
+      Return as JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -124,68 +103,103 @@ export const generateScenario = async (industry: Industry): Promise<Scenario> =>
                 required: ["id", "task"]
               }
             },
-            schema: {
+            tables: {
               type: Type.ARRAY,
               items: {
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  type: { type: Type.STRING }
+                  isFactTable: { type: Type.BOOLEAN },
+                  schema: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        name: { type: Type.STRING },
+                        type: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        isPk: { type: Type.BOOLEAN }
+                      },
+                      required: ["name", "type", "description", "isPk"]
+                    }
+                  },
+                  sampleData: { type: Type.STRING, description: "JSON stringified array of data rows" }
                 },
-                required: ["name", "type"]
+                required: ["name", "schema", "sampleData"]
               }
-            },
-            sampleData: { 
-              type: Type.STRING,
-              description: "JSON stringified array of data rows."
             }
           },
-          required: ["companyName", "problemStatement", "objectives", "schema", "sampleData"]
+          required: ["companyName", "problemStatement", "objectives", "tables"]
         }
       }
     });
 
     const result = JSON.parse(response.text || '{}');
-    
-    let parsedData = [];
-    try {
-      parsedData = JSON.parse(result.sampleData);
-    } catch (e) {
-      if (typeof result.sampleData === 'object') parsedData = result.sampleData;
-    }
+    const finalTables: DataTable[] = result.tables.map((t: any) => {
+      let parsedData = [];
+      try {
+        parsedData = typeof t.sampleData === 'string' ? JSON.parse(t.sampleData) : t.sampleData;
+      } catch (e) { parsedData = []; }
 
-    const scaledData = augmentData(parsedData, 10000);
+      const shouldScale = t.isFactTable || result.tables.length === 1 || t.name.toLowerCase().includes('transaction') || t.name.toLowerCase().includes('sale');
+      const targetRows = shouldScale ? (10000 + Math.floor(Math.random() * 5500)) : parsedData.length;
+      
+      return {
+        name: t.name,
+        schema: t.schema,
+        data: shouldScale ? augmentSingleTable(parsedData, targetRows) : parsedData,
+        isFactTable: !!t.isFactTable
+      };
+    });
 
     return {
       id: Math.random().toString(36).substring(2, 11),
       companyName: result.companyName,
       industry,
+      difficulty,
       problemStatement: result.problemStatement,
       objectives: result.objectives.map((obj: any) => ({ ...obj, completed: false })),
-      schema: result.schema,
-      sampleData: scaledData
+      tables: finalTables
     };
   });
 };
 
 export const getMentorAdvice = async (scenario: Scenario, currentHistory: ChatMessage[], currentWork: NotebookBlock[]): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   return withRetry(async () => {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `
-      You are a World-Class Data Strategist and Mentor.
-      Mission: ${scenario.companyName} (${scenario.industry})
-      Strategic Brief: ${scenario.problemStatement}
-      Recent Dialogue: ${JSON.stringify(currentHistory.slice(-5))}
-      Notebook Snapshot: ${JSON.stringify(currentWork.map(b => ({ type: b.type, content: b.content.substring(0, 100) })))}
+      model: 'gemini-3-pro-preview',
+      contents: `You are a world-class Socratic Tutor and Data Strategy Mentor.
+
+      YOUR MISSION:
+      Empower the analyst to solve the business problem using their own critical thinking. You are like a private tutor who helps a student derive a formula rather than giving it to them.
+
+      MISSION CONTEXT:
+      - Organization: ${scenario.companyName} (${scenario.industry})
+      - Business Case: ${scenario.problemStatement}
+      - Current Objectives: ${JSON.stringify(scenario.objectives)}
+      - Schema Knowledge: ${scenario.tables.map(t => `${t.name}: [${t.schema.map(s => s.name).join(', ')}]`).join(' | ')}
       
-      Advice Protocol:
-      1. Acknowledge the messy nature of real-world data but focus on how that noise impacts the strategic conclusion.
-      2. Suggest diverse analytical frameworks (e.g., Sensitivity analysis, Cluster analysis, Moving averages).
-      3. Push the analyst toward identifying the "Signal" while accounting for the "Noise."
-      4. Use a tone appropriate for the mission.
-      5. Keep advice concise and insightful.`
+      ANALYST ACTIVITY TRACKER:
+      - Last Notebook States: ${JSON.stringify(currentWork.map(b => ({ type: b.type, content: b.content.substring(0, 100), hasOutput: !!b.output })))}
+      - Recent Discussion: ${JSON.stringify(currentHistory.slice(-5))}
+
+      TUTORING PROTOCOLS:
+      1. SOCRATIC GUIDANCE: If asked "How do I calculate X?" or "What's the formula for Y?", respond by asking about the business logic. Example: "To find the churn rate, what two metrics would we need to compare to see who stayed versus who left?"
+      2. CONCEPT CLARIFICATION: If they don't understand a term (e.g., 'Star Schema' or 'Relational JOIN'), explain the *concept* clearly with an analogy, then ask how it applies to the current datasets.
+      3. NO SPOILERS: Never provide direct SQL queries, Python snippets, or final mathematical formulas.
+      4. MISSION ALIGNMENT: Always pivot the conversation back to the specific Objectives if the analyst gets distracted.
+      5. NO HONORIFICS: Do NOT use "Senior Analyst", "Analyst", or "Sir/Madam". Speak as a peer-mentor.
+      6. INCREMENTAL PUSH: Acknowledge small wins ("Excellent first look at the distribution...") and then nudge toward the next deeper question ("...now, what might explain that outlier in the Q3 data?").
+
+      FORMATTING:
+      - Use **Markdown** for emphasis.
+      - Use bullet points for multiple thoughts.
+      - Keep responses focused and punchy.`,
+      config: {
+        thinkingConfig: { thinkingBudget: 8000 }
+      }
     });
-    return response.text || "Insightful progress, Analyst. Remember that anomalies often hide the most interesting system behaviors. Keep investigating the outliers.";
+    return response.text || "I'm looking at your current data frame. What stands out to you in the relationship between those two key variables?";
   });
 };
