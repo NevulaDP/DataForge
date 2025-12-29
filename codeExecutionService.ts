@@ -55,6 +55,7 @@ import io
 import base64
 import sys
 import json
+import traceback
 
 # Prevent plt.show() from clearing the figure
 plt.show = lambda *args, **kwargs: plt.draw()
@@ -127,6 +128,7 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import sys
+import traceback
 
 # Setup capture
 out_capture = io.StringIO()
@@ -166,6 +168,10 @@ code_to_run = __user_code__.strip()
 lines = [l for l in code_to_run.split('\\n') if l.strip()]
 res = None
 
+response_type = "text"
+response_data = ""
+captured_logs = ""
+
 try:
     if len(lines) == 1:
         res = eval(lines[0], globals())
@@ -178,22 +184,40 @@ except Exception:
         res = ""
     except Exception as e:
         sys.stdout = old_stdout
-        raise e
+        # CLEAN ERROR HANDLING
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        # format_exception_only returns the final NameError/TypeError part
+        clean_error = "".join(traceback.format_exception_only(exc_type, exc_value)).strip()
+        
+        # Extract the line number from the traceback, filtering for user script frames
+        # Usually <exec> or <string>
+        tblist = traceback.extract_tb(exc_traceback)
+        user_frames = [f for f in tblist if f.filename in ["<exec>", "<string>"]]
+        
+        error_prefix = ""
+        if user_frames:
+            # We take the last frame which should be the user's specific line
+            line_no = user_frames[-1].lineno
+            error_prefix = f"Error on line {line_no}: "
+        
+        response_type = "error"
+        response_data = f"{error_prefix}{clean_error}"
+        captured_logs = out_capture.getvalue()
+        res = None
 
 sys.stdout = old_stdout
-captured_logs = out_capture.getvalue()
+if response_type != "error":
+    captured_logs = out_capture.getvalue()
+    if isinstance(res, (pd.DataFrame, pd.Series)):
+        response_type = "table"
+        df = res.to_frame() if isinstance(res, pd.Series) else res
+        response_data = df.head(50).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
+    else:
+        response_type = "text"
+        response_data = str(res) if res is not None else ""
 
-# Determine Base Result
-response_type = "text"
-response_data = str(res) if res is not None else ""
-
-if isinstance(res, (pd.DataFrame, pd.Series)):
-    response_type = "table"
-    df = res.to_frame() if isinstance(res, pd.Series) else res
-    response_data = df.head(50).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
-
-# Capture Chart
-if plt.get_fignums():
+# Capture Chart if successful
+if response_type != "error" and plt.get_fignums():
     fig = plt.gcf()
     if len(fig.axes) > 0:
         buf = io.BytesIO()
@@ -202,7 +226,6 @@ if plt.get_fignums():
         fig.canvas.draw()
         fig.savefig(buf, format='png', bbox_inches='tight', dpi=140)
         img_str = base64.b64encode(buf.getvalue()).decode('utf-8')
-        
         response_type = "chart"
         response_data = f"data:image/png;base64,{img_str}"
         plt.close('all')
@@ -228,6 +251,9 @@ json.dumps({
       }
       
       return result;
-    } catch (e: any) { return { type: 'error', data: e.message }; }
+    } catch (e: any) { 
+      // This catch is a fallback if the runnerScript itself fails to produce JSON
+      return { type: 'error', data: e.message }; 
+    }
   }
 };

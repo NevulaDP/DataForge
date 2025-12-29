@@ -65,10 +65,10 @@ const Workspace: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScena
         <div className="flex items-center justify-end space-x-3">
           <button 
             onClick={onAbout}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-full border transition-all text-[9px] font-black uppercase tracking-widest ${
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-full border transition-all text-[9px] font-black uppercase tracking-widest shadow-sm ${
               theme === 'dark' 
-                ? 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white hover:border-slate-700' 
-                : 'border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-800 hover:border-slate-300 shadow-sm'
+                ? 'border-slate-800 bg-slate-900/40 text-slate-400 hover:text-slate-200 hover:bg-slate-900' 
+                : 'border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50'
             }`}
           >
             <Info className="w-3.5 h-3.5" />
@@ -77,7 +77,11 @@ const Workspace: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScena
           
           <button 
             onClick={toggleTheme}
-            className="p-2.5 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all border border-slate-200 dark:border-slate-800 shadow-sm"
+            className={`p-2.5 rounded-full transition-all border shadow-sm ${
+              theme === 'dark'
+                ? 'border-slate-800 bg-slate-900/40 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+            }`}
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>

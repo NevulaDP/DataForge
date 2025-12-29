@@ -59,31 +59,22 @@ const ANALYST_TIPS = [
 ];
 
 const NeuralCore: React.FC<{ theme: 'light' | 'dark'; progress: number }> = ({ theme, progress }) => (
-  <div className="relative w-48 h-48 flex items-center justify-center">
-    <div className={`absolute inset-0 rounded-full blur-[60px] opacity-20 transition-all duration-1000 ${
-      theme === 'dark' ? 'bg-blue-500' : 'bg-blue-400'
-    }`} style={{ transform: `scale(${0.8 + (progress / 500)})` }} />
-    
-    <svg className="absolute w-full h-full animate-[spin_10s_linear_infinite]" viewBox="0 0 100 100">
+  <div className="relative w-56 h-56 flex items-center justify-center">
+    <svg className="absolute w-full h-full animate-[spin_20s_linear_infinite]" viewBox="0 0 100 100">
       <circle 
         cx="50" 
         cy="50" 
         r="48" 
         fill="none" 
         stroke="currentColor" 
-        strokeWidth="0.25" 
-        strokeDasharray="4,8" 
+        strokeWidth="0.5" 
+        strokeDasharray="4,16" 
         className={theme === 'dark' ? 'text-slate-700' : 'text-slate-300'} 
       />
     </svg>
 
-    <div className={`relative z-20 w-20 h-20 rounded-[24px] flex items-center justify-center transform transition-transform duration-500 ${
-      theme === 'dark' 
-        ? 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-[0_0_40px_rgba(37,99,235,0.4)]' 
-        : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl'
-    }`} style={{ scale: 0.9 + (Math.sin(Date.now() / 1000) * 0.05) }}>
-      <Database className="w-10 h-10 text-white animate-pulse" />
-      <div className="absolute inset-0 border-2 border-white/10 rounded-[24px]" />
+    <div className="relative z-20 transform transition-transform duration-500" style={{ scale: 1.1 + (Math.sin(Date.now() / 1000) * 0.05) }}>
+      <Logo size="lg" theme={theme} />
     </div>
   </div>
 );
@@ -182,30 +173,33 @@ const Onboarding: React.FC<Props> = ({
         <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-colors duration-700 ${
           theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'
         }`}>
-          <div className="relative z-10 flex flex-col items-center max-w-xl w-full px-8 text-center">
-            <div className="relative mb-16 flex items-center justify-center">
-              <div className="absolute w-32 h-32 bg-blue-500/30 rounded-full animate-[ripple_4s_linear_infinite]" />
+          <div className="relative z-10 flex flex-col items-center max-w-2xl w-full px-8 text-center">
+            <div className="relative mb-20 flex items-center justify-center">
               <NeuralCore theme={theme} progress={progress} />
             </div>
-            <div className="w-full space-y-10">
+            
+            <div className="w-full space-y-12">
               <div className="space-y-4">
-                <div className="flex items-center justify-center space-x-3">
-                  <Terminal className="w-4 h-4 text-blue-500 animate-pulse" />
-                  <h2 className={`text-3xl font-black uppercase tracking-[0.3em] ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                {/* Fixed height container to prevent layout shifting when text wraps */}
+                <div className="flex items-center justify-center h-48">
+                  <h2 className={`text-4xl md:text-5xl font-black uppercase tracking-[0.3em] leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     {loadingMessage}
                   </h2>
                 </div>
-                <div className="flex justify-between items-end px-1">
-                   <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">Simulation Initializing</p>
-                   <span className="text-blue-500 font-black text-xs tabular-nums">{Math.round(progress)}%</span>
+                
+                <div className="flex justify-center items-center h-6">
+                   <span className="text-blue-500 font-black text-sm tabular-nums tracking-widest">{Math.round(progress)}%</span>
                 </div>
               </div>
-              <div className={`relative w-full h-2.5 rounded-full border p-[2px] overflow-hidden ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-slate-200 border-slate-300'}`}>
-                <div className="h-full bg-blue-600 rounded-full transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
+
+              <div className={`relative w-full h-12 rounded-full border p-[5px] overflow-hidden ${theme === 'dark' ? 'bg-slate-900 border-slate-800 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-inner'}`}>
+                <div className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-[0_0_20px_rgba(37,99,235,0.4)] relative" style={{ width: `${progress}%` }}>
+                </div>
               </div>
             </div>
-            <div className={`mt-20 pt-10 border-t w-full ${theme === 'dark' ? 'border-slate-800/50' : 'border-slate-200'}`}>
-              <p className={`text-sm font-medium italic ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>"{ANALYST_TIPS[tipIndex]}"</p>
+
+            <div className={`mt-24 pt-12 border-t w-full ${theme === 'dark' ? 'border-slate-800/50' : 'border-slate-200'}`}>
+              <p className={`text-base font-semibold italic tracking-tight ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>"{ANALYST_TIPS[tipIndex]}"</p>
             </div>
           </div>
         </div>

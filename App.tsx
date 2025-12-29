@@ -98,20 +98,20 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setProgress(5);
-    setLoadingMessage("Calibrating Neural Core");
+    setLoadingMessage("Preparing environment");
 
     const progressTimer = setInterval(() => {
       setProgress(prev => {
         if (prev < 30) return prev + 2;
         if (prev < 60) {
-           setLoadingMessage("Synthesizing Relational Schema");
+           setLoadingMessage("Configuring dataset schema");
            return prev + 1;
         }
         if (prev < 85) {
-           setLoadingMessage("Populating Analytical Fragments");
+           setLoadingMessage("Generating simulation data");
            return prev + 0.5;
         }
-        setLoadingMessage("Optimizing Query Cache");
+        setLoadingMessage("Finalizing setup");
         return prev;
       });
     }, 300);
@@ -119,7 +119,7 @@ const App: React.FC = () => {
     try {
       const newScenario = await generateScenario(selectedIndustry, selectedDifficulty);
       setProgress(100);
-      setLoadingMessage("Simulation Ready");
+      setLoadingMessage("Ready");
       
       setTimeout(() => {
         setScenario(newScenario);
