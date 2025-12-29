@@ -8,7 +8,25 @@
 
 DataForge is a high-fidelity "flight simulator" designed for junior data analysts. It bridges the gap between theoretical courses and real-world business problems by forging endless, context-rich analytical missions on demand.
 
-![DataForge Hero](https://images.unsplash.com/photo-1551288049-bbda38a5f85d?auto=format&fit=crop&q=80&w=1200)
+<div align="center">
+  <svg width="800" height="200" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="800" height="200" rx="20" fill="#0f172a"/>
+    <path d="M50 100H150M250 100H350M450 100H550M650 100H750" stroke="#1e293b" stroke-width="2" stroke-dasharray="8 8"/>
+    <circle cx="200" cy="100" r="40" fill="#3b82f6" fill-opacity="0.2" stroke="#3b82f6" stroke-width="2"/>
+    <text x="200" y="105" text-anchor="middle" fill="#3b82f6" font-family="sans-serif" font-weight="bold" font-size="12">AI ARCHITECT</text>
+    <rect x="360" y="60" width="80" height="80" rx="10" fill="#10b981" fill-opacity="0.2" stroke="#10b981" stroke-width="2"/>
+    <text x="400" y="105" text-anchor="middle" fill="#10b981" font-family="sans-serif" font-weight="bold" font-size="12">SCALER</text>
+    <circle cx="600" cy="100" r="40" fill="#f59e0b" fill-opacity="0.2" stroke="#f59e0b" stroke-width="2"/>
+    <text x="600" y="105" text-anchor="middle" fill="#f59e0b" font-family="sans-serif" font-weight="bold" font-size="12">INSIGHTS</text>
+    <path d="M240 100L340 100" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M440 100L540 100" stroke="#10b981" stroke-width="2" marker-end="url(#arrow)"/>
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+      </marker>
+    </defs>
+  </svg>
+</div>
 
 ---
 
@@ -18,72 +36,80 @@ Standard data science projects often rely on static, over-cleaned datasets. Data
 1.  **On-Demand Forging**: Select an industry (Fintech, SaaS, Logistics, etc.) and difficulty to generate a unique business case.
 2.  **Synthetic Relational Data**: Generates 10k+ rows of realistic, messy data with maintained relational integrity.
 3.  **In-Browser Execution**: A full Python (Pandas/Matplotlib) and SQL environment running entirely via WebAssembly.
-4.  **AI Mentorship**: A Socratic mentor powered by Gemini 3 Flash that guides strategy without providing direct answers.
 
-## The Data Generation Pipeline
+## The Forge: How Data is Born
 
-DataForge utilizes a sophisticated two-phase "Architect & Fabricator" pipeline to ensure data is both strategically interesting and statistically significant.
+DataForge uses a **Hybrid Generation Pipeline** that combines the creative reasoning of Large Language Models with the precision of deterministic algorithms.
 
 ### Phase 1: AI Blueprinting (The Architect)
-The mission starts with a high-reasoning request to **Gemini 3 Flash**. The AI acts as a Senior Data Architect to:
-- **Design the Schema**: Creates table structures appropriate for the sector (e.g., Star Schemas for Retail).
-- **Define Semantic Logic**: Establishes how columns relate (FK/PK) and their business meaning.
-- **Generate the Seed**: Produces a "Seed" dataset of 20-30 rows containing the core "story" or business insight.
+When a mission is triggered, **Gemini 3 Flash** acts as a Senior Data Architect. It doesn't just "write data"; it designs a business ecosystem:
+- **Relational Blueprint**: It creates a schema (e.g., Snowflake or Star) specific to the industry.
+- **Semantic Mapping**: It assigns business logic to columns (e.g., `churn_rate` must be a float between 0 and 1).
+- **The Seed**: It generates 20-30 "perfect" rows. These rows contain the core insights (the "Answer") hidden within the patterns.
 
-### Phase 2: Deterministic Augmentation (The Fabricator)
-To achieve realistic volume (10k - 15k rows) without sacrificing performance or relational integrity, a custom **TypeScript Augmentation Engine** scales the seed data:
-- **Weighted Cloner**: Uses the AI seed to replicate patterns while maintaining primary/foreign key constraints.
-- **Controlled Entropy**: Algorithmic injection of `NULL` values (3% probability) and numerical outliers (+/- 50% spikes).
-- **Statistical Variance**: Applies a Gaussian-like variance (+/- 8%) to all metrics to ensure realistic distributions in histograms.
-- **Temporal Shifting**: Dynamically recalculates dates across a wide range to allow for Time-Series analysis.
+### Phase 2: Deterministic Scaling (The Fabricator)
+To turn a 30-row blueprint into a 15,000-row dataset, a custom **TypeScript Augmentation Engine** takes over. This ensures the data is "large" enough for real analysis without losing the AI's intended story.
 
-![Data Analysis Visualization](https://images.unsplash.com/photo-1543286386-713bdd548da4?auto=format&fit=crop&q=80&w=1200)
+<div align="center">
+  <svg width="600" height="250" viewBox="0 0 600 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="250" rx="20" fill="#0f172a"/>
+    <text x="30" y="40" fill="#94a3b8" font-family="sans-serif" font-weight="bold" font-size="14">FABRICATION LOGIC</text>
+    
+    <!-- Scaling Illustration -->
+    <rect x="50" y="80" width="100" height="20" rx="4" fill="#334155"/>
+    <rect x="50" y="110" width="100" height="20" rx="4" fill="#334155"/>
+    <rect x="50" y="140" width="100" height="20" rx="4" fill="#3b82f6" fill-opacity="0.5"/>
+    <text x="160" y="125" fill="#3b82f6" font-family="sans-serif" font-size="12">x500 Cloning</text>
+
+    <!-- Noise Illustration -->
+    <circle cx="350" cy="115" r="30" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="350" y="120" text-anchor="middle" fill="#f43f5e" font-family="sans-serif" font-size="10">ENTROPY</text>
+    <path d="M380 115H450" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="460" y="120" fill="#f43f5e" font-family="sans-serif" font-size="12">3% Null Injection</text>
+    
+    <!-- Variance Illustration -->
+    <path d="M50 200C100 200 150 160 200 160C250 160 300 220 350 220" stroke="#10b981" stroke-width="2"/>
+    <text x="370" y="200" fill="#10b981" font-family="sans-serif" font-size="12">+/- 8% Variance</text>
+  </svg>
+</div>
+
+**The scaling process includes:**
+- **Weighted Re-sampling**: Clones rows while preserving the statistical distributions of the AI seed.
+- **Controlled Entropy**: Randomly injects `null` values and extreme outliers (spikes) to force users to practice data cleaning.
+- **Temporal Shifting**: Dynamically recalculates dates so the data feels "fresh" relative to the current simulation time.
 
 ## Key Features
 
-### Mission-Driven Onboarding
-- **Dynamic Scenario Generation**: Every mission is unique, built from scratch based on user input.
-- **Complexity Scaling**: Select from **Beginner** (Flat Files), **Intermediate** (Relational JOINs), or **Advanced** (Star Schema Logic).
-
 ### The Analysis Notebook
-- **Hybrid Logic Cells**: Write and execute Python or SQL in a unified, state-persistent interface.
-- **Intelligent Autocomplete**: Custom CodeMirror 6 extensions providing context-aware suggestions for dataframes and tables.
+- **Hybrid Logic Cells**: Write and execute Python or SQL in a unified interface.
+- **State Synchronization**: Changes in Python (e.g., creating a new table in Pandas) can be synced back to the SQL engine via a custom WASM bridge.
 - **Visual Analytics**: Direct Matplotlib support—charts are rendered as high-resolution PNGs within the cell output.
 
 ### Socratic Mentor
 - **Context-Aware Guidance**: The AI mentor understands your objectives, current schemas, and the specific code you have executed.
-- **No-Spoiler Policy**: Designed to ask the right business questions that nudge intuition rather than providing copy-paste snippets.
+- **No-Spoiler Policy**: It asks questions that nudge your intuition rather than providing direct solutions.
+
+<div align="center">
+  <svg width="600" height="150" viewBox="0 0 600 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="600" height="150" rx="20" fill="#1e293b"/>
+    <circle cx="60" cy="75" r="30" fill="#3b82f6"/>
+    <path d="M50 75H70M60 65V85" stroke="white" stroke-width="3"/>
+    <rect x="110" y="50" width="450" height="15" rx="7.5" fill="#334155"/>
+    <rect x="110" y="75" width="300" height="15" rx="7.5" fill="#334155"/>
+    <text x="115" y="110" fill="#94a3b8" font-family="sans-serif" font-style="italic" font-size="12">"Have you checked for correlation between plan_type and churn_event?"</text>
+  </svg>
+</div>
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript, Tailwind CSS.
 - **AI Core**: Google Gemini API (`@google/genai`).
 - **Data Engines**: 
   - **Pyodide**: Python 3.x runtime in WebAssembly (Pandas, Numpy, Matplotlib).
   - **SQL.js**: SQLite engine for relational query practice.
-- **Editor**: CodeMirror 6 (customized for data science).
-
-## Architecture
-
-![Tech Architecture](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&q=80&w=1200)
-
-DataForge operates on a strictly client-side heavy architecture:
-- **State Management**: Persists analytical sessions (code, data, and chat) to `localStorage`.
-- **WASM Bridge**: Synchronizes data between the SQL engine and Python environment, allowing cross-language data cleaning and visualization.
-
-## Getting Started
-
-### Prerequisites
-- A modern browser with WebAssembly support.
-- A Google Gemini API Key (set as `process.env.API_KEY`).
-
-### Development
-1. Clone the repository.
-2. Open `index.html` via a local development server.
-3. The application will automatically load Pyodide and SQL.js from global CDNs.
+- **Editor**: CodeMirror 6 with custom autocompletion for dynamic dataframes.
 
 ## License
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
 
 ---
 
