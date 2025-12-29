@@ -1,20 +1,24 @@
 
+// Add missing imports to resolve React, useState, and useRef errors
 import React, { useState, useRef } from 'react';
 import { Scenario, SessionState, NotebookBlock } from '../types';
 import Logo from './Logo';
-import { Target, CheckCircle2, Circle, ChevronLeft, ChevronRight, Save, FolderOpen, Power, Printer, Loader2 } from 'lucide-react';
+import { Target, CheckCircle2, Circle, ChevronLeft, ChevronRight, Save, FolderOpen, Power, Printer, Loader2, Info } from 'lucide-react';
 // @ts-ignore
 import { marked } from "marked";
+// @ts-ignore
+import DOMPurify from "dompurify";
 
 interface Props {
   scenario: Scenario;
   onReset: () => void;
   onImport: (state: SessionState) => void;
+  onUpdateScenario: (updatedScenario: Scenario) => void;
   getCurrentState: () => SessionState;
   theme: 'light' | 'dark';
 }
 
-const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState, theme }) => {
+const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, onUpdateScenario, getCurrentState, theme }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,10 +26,19 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
   const parseMd = (content: string) => {
     try {
       // @ts-ignore
-      return marked.parse(content || "");
+      const rawHtml = marked.parse(content || "");
+      // @ts-ignore
+      return DOMPurify.sanitize(rawHtml);
     } catch (e) {
       return content || "";
     }
+  };
+
+  const toggleObjective = (id: string) => {
+    const updatedObjectives = scenario.objectives.map(obj => 
+      obj.id === id ? { ...obj, completed: !obj.completed } : obj
+    );
+    onUpdateScenario({ ...scenario, objectives: updatedObjectives });
   };
 
   const getReportHtml = (state: SessionState) => {
@@ -35,9 +48,10 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
         blocksHtml += `<div class="section-content">${parseMd(block.content)}</div>`;
       } else if (block.type === 'code') {
         if (block.includeCodeInReport) {
+          const langLabel = block.language === 'python' ? 'Python Script' : 'SQL Query';
           blocksHtml += `
             <div class="code-container">
-              <div class="label">LOGIC CELL: ${block.language?.toUpperCase()}</div>
+              <div class="label">${langLabel}</div>
               <pre class="code-block">${block.content}</pre>
             </div>
           `;
@@ -49,7 +63,7 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
             const headers = Object.keys(out.data[0]);
             blocksHtml += `
               <div class="table-container">
-                <div class="label">ANALYTICAL OUTPUT</div>
+                <div class="label">Analysis Results</div>
                 <table>
                   <thead>
                     <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
@@ -65,7 +79,7 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
           } else if (out.type === 'chart') {
             blocksHtml += `
               <div class="chart-container">
-                <div class="label">VISUAL EVIDENCE</div>
+                <div class="label">Visualization</div>
                 <div style="text-align: center; margin: 20px 0;">
                   <img src="${out.data}" style="max-width: 90%; border-radius: 8px; border: 1px solid #e2e8f0;" />
                 </div>
@@ -232,18 +246,6 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
             font-family: 'JetBrains Mono', monospace;
           }
 
-          .footer { 
-            margin-top: 80px; 
-            padding-top: 25px; 
-            border-top: 1px solid #f1f5f9; 
-            font-size: 7pt; 
-            font-weight: 700;
-            color: #94a3b8; 
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.4em;
-          }
-
           @media print {
             body { 
               padding: 0; 
@@ -255,7 +257,6 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
       <body>
         <div class="header-meta">
           <span>Strategic Briefing</span>
-          <span>REF: ${Math.floor(Date.now()/10000)}</span>
           <span>${new Date().toLocaleDateString()}</span>
         </div>
 
@@ -278,10 +279,6 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
         <h2>III. Quantitative Evidence</h2>
         ${blocksHtml}
 
-        <div class="footer">
-          DATAFORGE ANALYTICAL PROTOCOL 4.0 // CONFIDENTIAL
-        </div>
-        
         <script>
           window.onload = () => {
             setTimeout(() => {
@@ -314,7 +311,7 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
       setIsExporting(false);
     } catch (err: any) {
       console.error("PDF Export failed:", err);
-      alert(err.message || "Failed to generate mission report.");
+      alert(err.message || "Failed to generate project report.");
       setIsExporting(false);
     }
   };
@@ -346,36 +343,52 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
         if (state.scenario && state.blocks) {
           onImport(state);
         } else {
-          alert("Invalid mission file format.");
+          alert("Invalid project file format.");
         }
-      } catch (err) { alert("Failed to read mission file."); }
+      } catch (err) { alert("Failed to read project file."); }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
+  const commonButtonClasses = "flex items-center justify-center rounded-full transition-all border shadow-xl active:scale-95 group relative hover:shadow-2xl hover:brightness-105";
+
   return (
     <aside className={`relative h-full bg-white dark:bg-[#0c1222] border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-500 ease-in-out z-[60] ${isCollapsed ? 'w-24' : 'w-[440px]'}`}>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".flight,.json" />
       
+      <div className={`absolute inset-y-0 left-0 w-full flex items-start justify-center pt-36 pointer-events-none select-none transition-all duration-500 ${isCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div 
+          className="flex flex-col items-center"
+          style={{ 
+            writingMode: 'vertical-rl', 
+            transform: 'rotate(180deg)',
+          }}
+        >
+          <span className="text-[14px] font-black uppercase tracking-[1em] text-slate-200 dark:text-slate-800/60 whitespace-nowrap">
+            DATAFORGE
+          </span>
+        </div>
+      </div>
+
       <button 
         onClick={() => setIsCollapsed(!isCollapsed)} 
-        className="absolute -right-4 top-12 z-[70] flex items-center justify-center w-8 h-8 bg-[#3b82f6] rounded-full text-white shadow-2xl hover:bg-blue-500 transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-[#0c1222]"
+        className="absolute -right-4 top-12 z-[70] flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full text-white shadow-2xl hover:bg-blue-400 transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-[#0c1222]"
       >
         {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
       </button>
 
-      <div className={`flex items-center transition-all ${isCollapsed ? 'p-6 justify-center' : 'p-10 space-x-4'}`}>
+      <div className={`flex items-center transition-all ${isCollapsed ? 'p-6 justify-center' : 'p-10 pl-16 space-x-6'}`}>
         <Logo size={isCollapsed ? "sm" : "md"} theme={theme} />
         {!isCollapsed && (
           <div className="flex flex-col">
-            <h2 className="font-black tracking-[0.4em] uppercase text-xs text-slate-500 dark:text-slate-400">Mission Hub</h2>
-            <h1 className="font-black text-lg tracking-widest uppercase text-slate-900 dark:text-white -mt-1">DATAFORGE</h1>
+            <h2 className="font-black tracking-[0.3em] uppercase text-[10px] text-blue-500 opacity-80">Project Hub</h2>
+            <h1 className="font-black text-xl tracking-widest uppercase text-slate-900 dark:text-white leading-none mt-1">DATAFORGE</h1>
           </div>
         )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto scrollbar-hide transition-all ${isCollapsed ? 'p-0' : 'p-8 pt-0'} space-y-8`}>
+      <div className={`flex-1 overflow-y-auto scrollbar-hide transition-all ${isCollapsed ? 'p-0' : 'p-8 pt-0 pl-16'} space-y-8`}>
         {!isCollapsed && (
           <>
             <div className={`bg-slate-50 dark:bg-[#0f172a] rounded-[32px] border-2 border-slate-200 dark:border-slate-800 transition-all p-8 space-y-4 shadow-sm`}>
@@ -391,16 +404,20 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
               </div>
               <div className="space-y-5 px-1">
                 {scenario.objectives.map((obj) => (
-                  <div key={obj.id} className="flex items-start group relative space-x-4">
+                  <button 
+                    key={obj.id} 
+                    onClick={() => toggleObjective(obj.id)}
+                    className="flex items-start group relative space-x-4 w-full text-left transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50 p-2 -m-2 rounded-2xl"
+                  >
                     {obj.completed ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                     ) : (
-                      <Circle className="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5" />
+                      <Circle className="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors" />
                     )}
-                    <span className={`text-sm font-bold leading-relaxed transition-colors ${obj.completed ? 'text-slate-300 dark:text-slate-700 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`text-sm font-bold leading-relaxed transition-colors ${obj.completed ? 'text-slate-300 dark:text-slate-700 line-through' : 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white'}`}>
                       {obj.task}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -408,46 +425,58 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, getCurrentState
         )}
       </div>
 
-      <div className={`transition-all ${isCollapsed ? 'p-4 pb-10' : 'p-8 pt-0'} space-y-4`}>
+      <div className={`transition-all ${isCollapsed ? 'p-4 pb-10' : 'p-8 pt-0 pl-16'} space-y-4`}>
         <div className={`flex transition-all ${isCollapsed ? 'flex-col space-y-4 items-center' : 'flex-col space-y-3'}`}>
-          {!isCollapsed && <div className="h-px w-full bg-slate-100 dark:bg-slate-800/50 mb-2" />}
+          {!isCollapsed && <div className="h-px w-full bg-slate-100 dark:bg-slate-800/50 mb-4" />}
           
           <button 
             onClick={handleExportPDF} 
             disabled={isExporting}
-            className={`flex items-center justify-center bg-[#10b981] hover:bg-[#059669] disabled:bg-emerald-800 text-white rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
+            className={`${commonButtonClasses} bg-[#059669] hover:bg-[#10b981] text-white border-transparent ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-8 space-x-4'}`} 
             title="Export Strategic Report (PDF)"
           >
             {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5 shrink-0" />}
-            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">{isExporting ? 'Synthesizing...' : 'Export PDF Report'}</span>}
+            {!isCollapsed && <span className="font-black text-[12px] uppercase tracking-[0.25em]">{isExporting ? 'Synthesizing...' : 'Export PDF Report'}</span>}
           </button>
           
           <button 
             onClick={handleExportFile} 
-            className={`flex items-center justify-center bg-[#3b82f6] hover:bg-blue-600 text-white rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
-            title="Save Mission File"
+            className={`${commonButtonClasses} bg-[#2563eb] hover:bg-[#3b82f6] text-white border-transparent ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-8 space-x-4'}`} 
+            title="Save Project File"
           >
             <Save className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Save Progress</span>}
+            {!isCollapsed && <span className="font-black text-[12px] uppercase tracking-[0.25em]">Save Progress</span>}
           </button>
 
           <button 
             onClick={handleImportClick} 
-            className={`flex items-center justify-center bg-slate-100 dark:bg-[#1e293b] hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-full transition-all border border-transparent shadow-lg active:scale-95 group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
-            title="Load Mission File"
+            className={`${commonButtonClasses} ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-8 space-x-4'} ${
+              theme === 'dark' 
+                ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800' 
+                : 'bg-slate-100 border-slate-300 text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+            }`} 
+            title="Load Project File"
           >
-            <FolderOpen className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Load Mission</span>}
+            <FolderOpen className={`w-5 h-5 shrink-0 ${theme === 'dark' ? 'text-slate-400 group-hover:text-blue-400' : 'text-slate-400 group-hover:text-blue-500'}`} />
+            {!isCollapsed && <span className="font-black text-[12px] uppercase tracking-[0.25em]">Load Project</span>}
           </button>
 
-          <button 
-            onClick={(e) => { e.stopPropagation(); onReset(); }} 
-            className={`flex items-center justify-center bg-slate-100 dark:bg-[#1e293b] hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 text-slate-400 dark:text-slate-500 rounded-full transition-all border border-transparent shadow-lg active:scale-95 cursor-pointer group relative ${isCollapsed ? 'h-14 w-14' : 'w-full h-14 px-6 space-x-4'}`} 
-            title="End Mission"
-          >
-            <Power className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span className="font-black text-[11px] uppercase tracking-[0.2em]">Terminate</span>}
-          </button>
+          <div className={`${isCollapsed ? 'pt-4' : 'pt-8'}`}>
+            {!isCollapsed && <div className="h-px w-full bg-slate-100 dark:bg-slate-800/50 mb-6" />}
+            
+            <button 
+              onClick={(e) => { e.stopPropagation(); onReset(); }} 
+              className={`${commonButtonClasses} cursor-pointer ${isCollapsed ? 'h-14 w-14' : 'w-full h-16 px-8 space-x-4'} ${
+                theme === 'dark'
+                  ? 'bg-transparent border-slate-800 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 hover:border-rose-500/30'
+                  : 'bg-white border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-500/20'
+              }`}
+              title="Terminate Project"
+            >
+              <Power className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span className="font-black text-[12px] uppercase tracking-[0.25em]">Terminate Project</span>}
+            </button>
+          </div>
         </div>
       </div>
     </aside>

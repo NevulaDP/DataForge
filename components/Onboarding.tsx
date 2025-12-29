@@ -17,12 +17,14 @@ import {
   Sparkles,
   ChevronDown,
   Terminal,
-  Database
+  Database,
+  Info
 } from 'lucide-react';
 
 interface Props {
   onSelect: (industry: Industry, difficulty: Difficulty) => void;
   onImport: (state: SessionState) => void;
+  onAbout: () => void;
   loading: boolean;
   loadingMessage: string;
   progress?: number;
@@ -89,6 +91,7 @@ const NeuralCore: React.FC<{ theme: 'light' | 'dark'; progress: number }> = ({ t
 const Onboarding: React.FC<Props> = ({ 
   onSelect, 
   onImport, 
+  onAbout,
   loading, 
   loadingMessage, 
   progress = 0, 
@@ -132,30 +135,43 @@ const Onboarding: React.FC<Props> = ({
 
   return (
     <div className={`min-h-screen flex flex-col items-center p-8 transition-colors duration-500 font-['Plus_Jakarta_Sans'] overflow-hidden ${
-      theme === 'dark' ? 'bg-[#020617] text-white' : 'bg-white text-slate-950'
+      theme === 'dark' ? 'bg-[#020617] text-white' : 'bg-slate-50 text-slate-950'
     }`}>
       
       {/* PERSISTENT ACTION BAR */}
       <div className="fixed top-8 right-8 z-[110] flex items-center space-x-4">
         {!loading && (
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-              theme === 'dark' 
-                ? 'border-slate-800 text-white hover:bg-slate-900' 
-                : 'border-slate-200 text-slate-950 hover:bg-slate-50'
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            <span>Resume Project</span>
-          </button>
+          <>
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                theme === 'dark' 
+                  ? 'border-slate-800 text-white hover:bg-slate-900 bg-slate-900/50' 
+                  : 'border-slate-300 text-slate-700 hover:bg-white bg-white/50 shadow-sm'
+              }`}
+            >
+              <Upload className="w-4 h-4" />
+              <span>Resume Project</span>
+            </button>
+            <button 
+              onClick={onAbout}
+              className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                theme === 'dark' 
+                  ? 'border-slate-800 text-white hover:bg-slate-900 bg-slate-900/50' 
+                  : 'border-slate-300 text-slate-700 hover:bg-white bg-white/50 shadow-sm'
+              }`}
+            >
+              <Info className="w-4 h-4" />
+              <span>About Me</span>
+            </button>
+          </>
         )}
         <button 
           onClick={toggleTheme} 
           className={`p-3 rounded-full border-2 transition-all shadow-lg active:scale-95 ${
             theme === 'dark' 
               ? 'border-slate-800 bg-slate-900 text-white' 
-              : 'border-slate-200 bg-white text-slate-950'
+              : 'border-slate-300 bg-white text-slate-700'
           }`}
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -199,7 +215,7 @@ const Onboarding: React.FC<Props> = ({
       <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-20 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="flex items-center space-x-4">
           <Logo size="md" theme={theme} />
-          <span className="font-black text-[12px] uppercase tracking-[0.4em] opacity-90">DataForge</span>
+          <span className={`font-black text-[12px] uppercase tracking-[0.4em] opacity-90 ${theme === 'dark' ? 'text-white' : 'text-slate-600'}`}>DataForge</span>
         </div>
       </div>
 
@@ -223,16 +239,16 @@ const Onboarding: React.FC<Props> = ({
           
           {/* GREETING & HEADLINE */}
           <div className="space-y-6 px-2">
-            <div className="flex items-center space-x-3 text-slate-500 dark:text-slate-400">
-              <Sparkles className="w-6 h-6 text-blue-500" />
+            <div className={`flex items-center space-x-3 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <Sparkles className="w-6 h-6 text-blue-600" />
               <span className="text-2xl font-medium tracking-tight">Hi analyst!</span>
             </div>
             <div className="space-y-4">
-              <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-[1.1] md:leading-[1.15]">
-                Find your <span className="inline-block bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent pb-6 pt-2 -mb-6 -mt-2">data edge.</span>
+              <h1 className={`text-6xl md:text-8xl font-black tracking-tight leading-[1.1] md:leading-[1.15] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+                Find your <span className={`inline-block bg-gradient-to-r ${theme === 'dark' ? 'from-blue-400' : 'from-blue-700'} via-indigo-600 to-purple-700 bg-clip-text text-transparent pb-6 pt-2 -mb-6 -mt-2`}>data edge.</span>
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base font-medium leading-relaxed max-w-3xl">
-                The ultimate flight simulator for junior data analysts. Sharpen your intuition, refine your SQL/Python logic, and master the art of data strategy through high-stakes business simulations.
+              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} text-lg md:text-xl font-medium leading-relaxed max-w-4xl`}>
+                Master the end-to-end analytical workflow. Solve complex enterprise business cases using SQL and Python with targeted strategic mentorship.
               </p>
             </div>
           </div>
@@ -255,7 +271,7 @@ const Onboarding: React.FC<Props> = ({
               }`}>
                 
                 <div className="pl-6 pr-2">
-                  <Search className={`w-6 h-6 transition-colors duration-300 ${theme === 'dark' ? 'text-slate-500/40 group-focus-within:text-blue-500/40' : 'text-slate-300'}`} />
+                  <Search className={`w-6 h-6 transition-colors duration-300 ${theme === 'dark' ? 'text-slate-500/40 group-focus-within:text-blue-500/40' : 'text-slate-500 group-focus-within:text-blue-600'}`} />
                 </div>
 
                 {/* Input */}
@@ -265,7 +281,7 @@ const Onboarding: React.FC<Props> = ({
                   onChange={(e) => setCustomIndustry(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStart(customIndustry)}
                   placeholder="Ask DataForge for a specific sector..."
-                  className="flex-1 bg-transparent border-none focus:ring-0 py-5 px-4 text-xl font-medium placeholder:text-slate-500/40"
+                  className={`flex-1 bg-transparent border-none focus:ring-0 py-5 px-4 text-xl font-medium ${theme === 'dark' ? 'placeholder:text-slate-500/40 text-white' : 'placeholder:text-slate-500 text-slate-900'}`}
                 />
 
                 {/* Actions */}
@@ -278,7 +294,7 @@ const Onboarding: React.FC<Props> = ({
                       className={`flex items-center space-x-3 px-6 py-3 rounded-full border transition-all ${
                         theme === 'dark' 
                           ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-300' 
-                          : 'border-slate-200 bg-slate-50 hover:bg-white text-slate-600'
+                          : 'border-slate-300 bg-slate-50 hover:bg-white text-slate-700'
                       }`}
                     >
                       <span className="text-xs font-black uppercase tracking-widest">{currentDiffLabel?.label}</span>
@@ -293,9 +309,9 @@ const Onboarding: React.FC<Props> = ({
                           <button
                             key={d.id}
                             onClick={() => { setSelectedDifficulty(d.id); setIsDiffOpen(false); }}
-                            className={`w-full text-left p-4 rounded-2xl transition-all ${
+                            className={`w-full text-left p-4 rounded-[24px] transition-all ${
                               selectedDifficulty === d.id 
-                                ? 'bg-blue-600 text-white' 
+                                ? 'bg-blue-600 text-white shadow-lg' 
                                 : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500'
                             }`}
                           >
@@ -323,14 +339,14 @@ const Onboarding: React.FC<Props> = ({
               {industryPresets.map((ind) => (
                 <button 
                   key={ind.name} 
-                  onClick={() => handleStart(ind.name)} 
+                  onClick={() => setCustomIndustry(ind.name)} 
                   className={`flex items-center space-x-4 px-10 py-5 rounded-full border-2 transition-all hover:scale-105 active:scale-95 group ${
                     theme === 'dark' 
                       ? 'bg-slate-900/40 border-slate-800 hover:border-blue-600/50 text-slate-400' 
-                      : 'bg-white border-slate-100 hover:border-blue-600/50 shadow-sm text-slate-600'
+                      : 'bg-white border-slate-300 hover:border-blue-600/50 shadow-md text-slate-700 font-semibold'
                   }`}
                 >
-                  <ind.icon className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                  <ind.icon className={`w-6 h-6 transition-colors ${theme === 'dark' ? 'text-slate-500 group-hover:text-blue-500' : 'text-slate-500 group-hover:text-blue-600'}`} />
                   <span className="text-base font-bold tracking-tight">{ind.name}</span>
                 </button>
               ))}

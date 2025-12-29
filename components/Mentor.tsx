@@ -5,6 +5,8 @@ import { MessageSquare, Send, X, User, Bot, Loader2, Sparkles } from 'lucide-rea
 import { getMentorAdvice } from '../geminiService';
 // @ts-ignore
 import { marked } from "marked";
+// @ts-ignore
+import DOMPurify from "dompurify";
 
 interface Props {
   scenario: Scenario;
@@ -45,7 +47,10 @@ const Mentor: React.FC<Props> = ({ scenario, blocks, messages, setMessages }) =>
 
   const renderMarkdown = (content: string) => {
     try {
-      return marked.parse(content);
+      // @ts-ignore
+      const html = marked.parse(content);
+      // @ts-ignore
+      return DOMPurify.sanitize(html);
     } catch (e) {
       return content;
     }

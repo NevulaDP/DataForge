@@ -44,19 +44,26 @@ export const initEngines = async (scenario: Scenario) => {
     await pyodide.loadPackage(["pandas", "numpy", "matplotlib"]);
   }
 
+  // Initial Python Configuration
+  await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import io
+import base64
+import sys
+import json
+
+# Prevent plt.show() from clearing the figure
+plt.show = lambda *args, **kwargs: plt.draw()
+  `);
+
   // Load all tables into Python as DataFrames
   for (const table of scenario.tables) {
     pyodide.globals.set(`js_data_${table.name}`, table.data);
     await pyodide.runPythonAsync(`
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-import json
-import io
-import base64
-import sys
-matplotlib.use('Agg')
 ${table.name} = pd.DataFrame(js_data_${table.name}.to_py())
     `);
   }
@@ -94,11 +101,10 @@ json.dumps({"dataframes": symbols})
   }
 };
 
-export const executeCode = async (language: 'python' | 'sql', code: string, theme: 'light' | 'dark' = 'dark'): Promise<{ type: 'table' | 'text' | 'error' | 'chart', data: any, logs?: string, updatedDf?: any[] }> => {
+export const executeCode = async (language: 'python' | 'sql', code: string, theme: 'light' | 'dark' = 'dark'): Promise<{ type: 'table' | 'text' | 'error' | 'chart', data: any, logs?: string, sync?: Record<string, any[]> }> => {
   if (language === 'sql') {
     try {
       const res = sqlDb.exec(code);
-      // We don't automatically update scenario data from SQL yet, just return result
       if (res.length === 0) return { type: 'text', data: 'Execution successful.' };
       const columns = res[0].columns;
       const data = res[0].values.map((row: any[]) => {
@@ -112,6 +118,7 @@ export const executeCode = async (language: 'python' | 'sql', code: string, them
     try {
       pyodide.globals.set("__user_code__", code);
       pyodide.globals.set("__theme__", theme);
+      
       const runnerScript = `
 import json
 import pandas as pd
@@ -121,73 +128,105 @@ import io
 import base64
 import sys
 
-def run_user_logic():
-    code = globals().get("__user_code__", "").strip()
-    theme = globals().get("__theme__", "dark")
-    if not code: return {"type": "text", "data": ""}
-    
-    out_capture = io.StringIO()
-    old_stdout = sys.stdout
-    sys.stdout = out_capture
-    
-    if theme == "dark":
-        plt.rcParams.update({"text.color": "#f1f5f9", "axes.labelcolor": "#cbd5e1", "axes.edgecolor": "#334155", "xtick.color": "#94a3b8", "ytick.color": "#94a3b8", "grid.color": "#1e293b", "axes.titlecolor": "#f1f5f9", "figure.facecolor": "none", "axes.facecolor": "none"})
+# Setup capture
+out_capture = io.StringIO()
+old_stdout = sys.stdout
+sys.stdout = out_capture
+
+# Apply Styling
+if __theme__ == "dark":
+    plt.rcParams.update({
+        "text.color": "#f1f5f9", 
+        "axes.labelcolor": "#cbd5e1", 
+        "axes.edgecolor": "#334155", 
+        "xtick.color": "#94a3b8", 
+        "ytick.color": "#94a3b8", 
+        "grid.color": "#1e293b", 
+        "axes.titlecolor": "#f1f5f9", 
+        "figure.facecolor": "#0c1222", 
+        "axes.facecolor": "#0f172a"
+    })
+else:
+    plt.rcParams.update({
+        "text.color": "#0f172a", 
+        "axes.labelcolor": "#475569", 
+        "axes.edgecolor": "#cbd5e1", 
+        "xtick.color": "#64748b", 
+        "ytick.color": "#64748b", 
+        "grid.color": "#f1f5f9", 
+        "axes.titlecolor": "#0f172a", 
+        "figure.facecolor": "#ffffff",
+        "axes.facecolor": "#ffffff"
+    })
+
+plt.close('all')
+
+# Run Code
+code_to_run = __user_code__.strip()
+lines = [l for l in code_to_run.split('\\n') if l.strip()]
+res = None
+
+try:
+    if len(lines) == 1:
+        res = eval(lines[0], globals())
     else:
-        plt.rcParams.update({"text.color": "#0f172a", "axes.labelcolor": "#475569", "axes.edgecolor": "#cbd5e1", "xtick.color": "#64748b", "ytick.color": "#64748b", "grid.color": "#f1f5f9", "axes.titlecolor": "#0f172a", "figure.facecolor": "none", "axes.facecolor": "none"})
-
-    plt.close('all')
-    locs = globals()
-    lines = code.split('\\n')
-    res = None
+        exec("\\n".join(lines[:-1]), globals())
+        res = eval(lines[-1], globals())
+except Exception:
     try:
-        if len(lines) == 1:
-            res = eval(lines[0], globals(), locs)
-        else:
-            exec("\\n".join(lines[:-1]), globals(), locs)
-            res = eval(lines[-1], globals(), locs)
-    except Exception:
-        try:
-            exec(code, globals(), locs)
-            res = ""
-        except Exception as e:
-            sys.stdout = old_stdout
-            raise e
+        exec(code_to_run, globals())
+        res = ""
+    except Exception as e:
+        sys.stdout = old_stdout
+        raise e
 
-    sys.stdout = old_stdout
-    captured_logs = out_capture.getvalue()
+sys.stdout = old_stdout
+captured_logs = out_capture.getvalue()
 
-    # Track all updated DataFrames to sync back to SQL
-    sync_payload = {}
-    for name, obj in globals().items():
-        if isinstance(obj, pd.DataFrame) and not name.startswith('_'):
-            sync_payload[name] = obj.head(1000).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
+# Determine Base Result
+response_type = "text"
+response_data = str(res) if res is not None else ""
 
-    response = {"type": "text", "data": str(res), "logs": captured_logs, "sync": sync_payload}
+if isinstance(res, (pd.DataFrame, pd.Series)):
+    response_type = "table"
+    df = res.to_frame() if isinstance(res, pd.Series) else res
+    response_data = df.head(50).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
 
-    if isinstance(res, pd.DataFrame):
-        preview = res.head(50).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
-        response.update({"type": "table", "data": preview})
-    elif isinstance(res, pd.Series):
-        preview = res.head(50).replace({np.nan: None, np.inf: None, -np.inf: None}).reset_index().to_dict(orient='records')
-        response.update({"type": "table", "data": preview})
-
+# Capture Chart
+if plt.get_fignums():
     fig = plt.gcf()
-    if fig.get_axes():
+    if len(fig.axes) > 0:
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150, transparent=True)
-        img_str = base64.b64encode(buf.read()).decode('utf-8')
+        fig.set_size_inches(10, 6)
+        fig.tight_layout()
+        fig.canvas.draw()
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=140)
+        img_str = base64.b64encode(buf.getvalue()).decode('utf-8')
+        
+        response_type = "chart"
+        response_data = f"data:image/png;base64,{img_str}"
         plt.close('all')
-        response.update({"type": "chart", "data": f"data:image/png;base64,{img_str}"})
-    
-    return response
 
-json.dumps(run_user_logic())
+# Sync Tables
+sync_payload = {}
+for name, obj in list(globals().items()):
+    if isinstance(obj, pd.DataFrame) and not name.startswith('_'):
+        sync_payload[name] = obj.head(1000).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
+
+json.dumps({
+    "type": response_type,
+    "data": response_data,
+    "logs": captured_logs,
+    "sync": sync_payload
+})
 `;
       const resultJson = await pyodide.runPythonAsync(runnerScript);
       const result = JSON.parse(resultJson);
+      
       if (result.sync) {
         Object.entries(result.sync).forEach(([tbl, data]: any) => syncToSql(tbl, data));
       }
+      
       return result;
     } catch (e: any) { return { type: 'error', data: e.message }; }
   }

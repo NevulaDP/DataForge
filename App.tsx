@@ -6,6 +6,8 @@ import Workspace from './components/Workspace';
 import Sidebar from './components/Sidebar';
 import Mentor from './components/Mentor';
 import MobileLockout from './components/MobileLockout';
+import AboutModal from './components/AboutModal';
+import ConfirmModal from './components/ConfirmModal';
 import { generateScenario } from './geminiService';
 
 const SESSION_KEY = 'data_forge_session_v2';
@@ -19,6 +21,9 @@ const App: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as 'light' | 'dark') || 'dark');
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<SessionState | null>(null);
+  
   const [blocks, setBlocks] = useState<NotebookBlock[]>([
     { id: '1', type: 'text', content: '# Strategic Briefing\nWelcome. Use the dataset explorer to understand your target sources and document your logic below.' }
   ]);
@@ -71,13 +76,21 @@ const App: React.FC = () => {
   }, []);
 
   const handleImport = useCallback((state: SessionState) => {
+    // Stage for confirmation
+    setPendingImport(state);
+  }, []);
+
+  const finalizeImport = useCallback(() => {
+    if (!pendingImport) return;
+    const state = pendingImport;
     setIndustry(state.industry);
     setDifficulty(state.difficulty);
     setScenario(state.scenario);
     setBlocks(state.blocks);
     setMentorMessages(state.mentorMessages);
     if (state.theme) setTheme(state.theme);
-  }, []);
+    setPendingImport(null);
+  }, [pendingImport]);
 
   const handleStart = async (selectedIndustry: Industry, selectedDifficulty: Difficulty) => {
     setIndustry(selectedIndustry);
@@ -126,10 +139,20 @@ const App: React.FC = () => {
   return (
     <>
       <MobileLockout theme={theme} />
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} theme={theme} />
+      <ConfirmModal 
+        isOpen={!!pendingImport} 
+        onClose={() => setPendingImport(null)} 
+        onConfirm={finalizeImport} 
+        pendingState={pendingImport} 
+        theme={theme} 
+        isExistingSession={!!scenario}
+      />
       {!scenario || loading ? (
         <Onboarding 
           onSelect={handleStart} 
           onImport={handleImport} 
+          onAbout={() => setIsAboutOpen(true)}
           loading={loading} 
           loadingMessage={loadingMessage} 
           progress={progress}
@@ -143,6 +166,7 @@ const App: React.FC = () => {
             scenario={scenario} 
             onReset={handleReset} 
             onImport={handleImport} 
+            onUpdateScenario={s => setScenario(s)}
             getCurrentState={() => ({ industry, difficulty, scenario, blocks, mentorMessages, theme })}
             theme={theme}
           />
@@ -154,6 +178,7 @@ const App: React.FC = () => {
               onUpdateScenario={s => setScenario(s)} 
               theme={theme} 
               toggleTheme={toggleTheme} 
+              onAbout={() => setIsAboutOpen(true)}
               onReset={handleReset} 
             />
             <Mentor 

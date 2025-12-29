@@ -15,6 +15,8 @@ import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { tags as t } from "@lezer/highlight";
 // @ts-ignore
 import { marked } from "marked";
+// @ts-ignore
+import DOMPurify from "dompurify";
 
 interface Props {
   scenario: Scenario;
@@ -143,8 +145,8 @@ const Toggle = ({ label, active, onChange }: { label: string, active: boolean, o
     }`}
   >
     <span>{label}</span>
-    <div className={`w-8 h-4 rounded-full relative transition-colors ${active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-      <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200 ${active ? 'translate-x-4' : 'translate-x-0'}`} />
+    <div className={`w-8 h-4 rounded-full relative transition-colors duration-300 ${active ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+      <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-300 ease-out ${active ? 'translate-x-4' : 'translate-x-0'}`} />
     </div>
   </button>
 );
@@ -152,38 +154,20 @@ const Toggle = ({ label, active, onChange }: { label: string, active: boolean, o
 const AddBlockSeparator = ({ onAdd }: { onAdd: (type: 'text' | 'python' | 'sql') => void }) => {
   return (
     <div className="group relative h-12 flex items-center justify-center -my-6 z-20">
-      {/* Subtle Decorative Line */}
-      <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-800 to-transparent opacity-10 group-hover:opacity-40 transition-all duration-700" />
+      {/* Subtle line */}
+      <div className="absolute inset-x-0 h-px bg-slate-200 dark:bg-slate-800 opacity-20 group-hover:opacity-40 transition-opacity" />
       
-      {/* Tool Selection Pills */}
-      <div className="flex items-center space-x-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto z-30">
-        <button
-          onClick={() => onAdd('text')}
-          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
-        >
-          <TypeIcon className="w-3.5 h-3.5" />
-          <span>+ Insight</span>
-        </button>
-        <button
-          onClick={() => onAdd('python')}
-          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
-        >
-          <Terminal className="w-3.5 h-3.5" />
-          <span>+ Python</span>
-        </button>
-        <button
-          onClick={() => onAdd('sql')}
-          className="flex items-center space-x-2 px-6 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-xl active:scale-95"
-        >
-          <Database className="w-3.5 h-3.5" />
-          <span>+ SQL</span>
-        </button>
+      {/* Action Pills - Minimalist */}
+      <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+        <button onClick={() => onAdd('text')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ Insight</button>
+        <button onClick={() => onAdd('python')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ Python</button>
+        <button onClick={() => onAdd('sql')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ SQL</button>
       </div>
 
       {/* Simplified Persistent Node */}
-      <div className="absolute transition-all duration-500 group-hover:opacity-0 group-hover:scale-50 pointer-events-none">
-        <div className="relative w-8 h-8 rounded-full bg-white dark:bg-[#0f172a] border-2 border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-lg transition-transform group-hover:rotate-90">
-          <Plus className="w-4 h-4 text-blue-500" />
+      <div className="absolute flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity duration-300">
+        <div className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-center shadow-md">
+          <Plus className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
         </div>
       </div>
     </div>
@@ -234,9 +218,18 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
     setExecutingId(id);
     try {
       const result = await executeCode(block.language!, block.content, theme);
-      if (result.updatedDf) {
-        onUpdateScenario({ ...scenario, sampleData: result.updatedDf });
+      
+      // If code execution resulted in synchronized table updates, reflect them in the UI
+      if (result.sync) {
+        const updatedTables = scenario.tables.map(table => {
+          if (result.sync![table.name]) {
+            return { ...table, data: result.sync![table.name] };
+          }
+          return table;
+        });
+        onUpdateScenario({ ...scenario, tables: updatedTables });
       }
+
       setBlocks(prev => prev.map(b => b.id === id ? { ...b, output: { type: result.type, data: result.data, logs: result.logs } } : b));
     } catch (e: any) {
       setBlocks(prev => prev.map(b => b.id === id ? { ...b, output: { type: 'error', data: e.message } } : b));
@@ -244,7 +237,14 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
   }, [blocks, setBlocks, theme, scenario, onUpdateScenario]);
   
   const renderMarkdown = (content: string) => {
-    try { return marked.parse(content || "_Add your narrative here..._"); } catch (e) { return content; }
+    try { 
+      // @ts-ignore
+      const html = marked.parse(content || "_Add your narrative here..._"); 
+      // @ts-ignore
+      return DOMPurify.sanitize(html);
+    } catch (e) { 
+      return content; 
+    }
   };
 
   return (
@@ -291,7 +291,7 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
                   <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-3 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
                       {block.language === 'sql' ? <Database className="w-4 h-4" /> : <Terminal className="w-4 h-4" />}
-                      <span>{block.language === 'sql' ? 'SQL' : 'PYTHON'}</span>
+                      <span>{block.language === 'sql' ? 'SQL Query' : 'Python Script'}</span>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Toggle 
@@ -319,7 +319,7 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
                 {block.output && (
                   <div className="bg-white dark:bg-[#0c1222] border-2 border-slate-100 dark:border-slate-800 rounded-[32px] overflow-hidden mt-6 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
                     <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                      <div className="px-8 py-3 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">Console Output</div>
+                      <div className="px-8 py-3 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">Analysis Results</div>
                     </div>
                     <div className="p-8 overflow-x-auto max-h-[500px] scrollbar-hide space-y-6">
                       {block.output.logs && block.output.logs.trim().length > 0 && (

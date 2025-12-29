@@ -25,7 +25,8 @@
     "@codemirror/lang-markdown": "6.3.2",
     "@codemirror/theme-one-dark": "6.1.2",
     "@lezer/highlight": "^1.2.3",
-    "marked": "15.0.0"
+    "marked": "15.0.0",
+    "dompurify": "3.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
