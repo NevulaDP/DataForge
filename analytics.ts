@@ -60,5 +60,6 @@ export const Analytics = {
   REPORT_EXPORTED: 'report_exported',
   MENTOR_ADVICE_REQUESTED: 'mentor_advice',
   SESSION_RESUMED: 'session_resumed',
-  ABOUT_VIEWED: 'about_viewed'
+  ABOUT_VIEWED: 'about_viewed',
+  MOBILE_INTEREST_CAPTURED: 'mobile_interest_captured'
 };

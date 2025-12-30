@@ -25,10 +25,10 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', theme = 'dark' }) => {
       <style>{`
         @keyframes dash-crawl {
           from { stroke-dashoffset: 0; }
-          to { stroke-dashoffset: 24; }
+          to { stroke-dashoffset: -24; }
         }
         .animate-dash-crawl {
-          animation: dash-crawl 4s linear infinite;
+          animation: dash-crawl 3s linear infinite;
         }
       `}</style>
       
@@ -105,7 +105,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', theme = 'dark' }) => {
             fill="none" 
             stroke="currentColor" 
             strokeWidth="3" 
-            strokeDasharray="10,10"
+            strokeDasharray="12,12"
             className={`animate-dash-crawl transition-colors duration-500 ${
               isDark ? 'text-blue-500/30' : 'text-blue-500/20'
             }`}

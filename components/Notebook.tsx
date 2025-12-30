@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Scenario, NotebookBlock } from '../types';
-import { Play, Trash2, Loader2, AlertCircle, Terminal, Database, Edit3, Eye, Plus, Type as TypeIcon } from 'lucide-react';
+import { Play, Trash2, Loader2, AlertCircle, Terminal, Database, Edit3, Eye, Plus, CheckCircle2 } from 'lucide-react';
 import { executeCode, initEngines, getDynamicSymbols } from '../codeExecutionService';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from "@codemirror/view";
 import { EditorState, Extension } from "@codemirror/state";
@@ -173,6 +173,7 @@ const AddBlockSeparator = ({ onAdd }: { onAdd: (type: 'text' | 'python' | 'sql')
 const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenario, theme }) => {
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  
   const hasInitialized = useRef(false);
   
   useEffect(() => {
@@ -180,7 +181,7 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
       initEngines(scenario);
       hasInitialized.current = scenario.id as any;
     }
-  }, [scenario.id]);
+  }, [scenario.id, scenario]);
   
   const addBlockAt = useCallback((index: number, type: 'text' | 'python' | 'sql') => {
     const newBlock: NotebookBlock = {
@@ -213,7 +214,6 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
     if (!block || block.type !== 'code') return;
     setExecutingId(id);
     
-    // Track execution in GA4
     trackEvent(Analytics.CODE_EXECUTED, {
       language: block.language,
       code_length: block.content.length

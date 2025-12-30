@@ -144,17 +144,25 @@ const Onboarding: React.FC<Props> = ({
               <Upload className="w-4 h-4" />
               <span>Resume Project</span>
             </button>
-            <button 
-              onClick={onAbout}
-              className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                theme === 'dark' 
-                  ? 'border-slate-800 text-white hover:bg-slate-900 bg-slate-900/50' 
-                  : 'border-slate-300 text-slate-700 hover:bg-white bg-white/50 shadow-sm'
-              }`}
-            >
-              <Info className="w-4 h-4" />
-              <span>About Me</span>
-            </button>
+            
+            <div className="relative group">
+              {/* Glow Layer */}
+              <div className="absolute -inset-[2px] rounded-full blur-lg opacity-40 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
+              {/* Moving Border Layer */}
+              <div className="absolute -inset-[1.5px] rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move shadow-[0_0_15px_-3px_rgba(37,99,235,0.4)]" />
+              
+              <button 
+                onClick={onAbout}
+                className={`relative flex items-center space-x-3 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                  theme === 'dark' 
+                    ? 'bg-[#0f172a] text-white' 
+                    : 'bg-white text-slate-700'
+                }`}
+              >
+                <Info className="w-4 h-4" />
+                <span>About Me</span>
+              </button>
+            </div>
           </>
         )}
         <button 

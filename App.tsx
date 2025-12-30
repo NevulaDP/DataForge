@@ -10,7 +10,8 @@ import AboutModal from './components/AboutModal';
 import ConfirmModal from './components/ConfirmModal';
 import CookieBanner from './components/CookieBanner';
 import { generateScenario } from './geminiService';
-import { trackEvent, Analytics, hasConsent } from './analytics';
+import { initEngines } from './codeExecutionService';
+import { trackEvent, Analytics } from './analytics';
 
 const SESSION_KEY = 'data_forge_session_v2';
 
@@ -36,18 +37,7 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const state: SessionState = JSON.parse(saved);
-        setIndustry(state.industry);
-        setDifficulty(state.difficulty || null);
-        setScenario(state.scenario);
-        setBlocks(state.blocks);
-        setMentorMessages(state.mentorMessages);
-        if (state.theme) setTheme(state.theme);
-        
-        // Track session resumption (only if consent granted)
-        trackEvent(Analytics.SESSION_RESUMED, {
-          industry: state.industry,
-          difficulty: state.difficulty
-        });
+        handleImport(state);
       } catch (e) { localStorage.removeItem(SESSION_KEY); }
     }
   }, []);
@@ -94,21 +84,44 @@ const App: React.FC = () => {
     setPendingImport(state);
   }, []);
 
-  const finalizeImport = useCallback(() => {
+  const finalizeImport = useCallback(async () => {
     if (!pendingImport) return;
     const state = pendingImport;
-    setIndustry(state.industry);
-    setDifficulty(state.difficulty);
-    setScenario(state.scenario);
-    setBlocks(state.blocks);
-    setMentorMessages(state.mentorMessages);
-    if (state.theme) setTheme(state.theme);
-    setPendingImport(null);
     
-    trackEvent(Analytics.SESSION_RESUMED, {
-      method: 'file_import',
-      industry: state.industry
-    });
+    setLoading(true);
+    setProgress(15);
+    setLoadingMessage("Checking environment");
+    setError(null); 
+    setPendingImport(null);
+
+    try {
+      setLoadingMessage("Synchronizing datasets");
+      setProgress(40);
+
+      // Fault tolerant boot
+      await initEngines(state.scenario!);
+      
+      setIndustry(state.industry);
+      setDifficulty(state.difficulty);
+      setScenario(state.scenario);
+      setBlocks(state.blocks);
+      setMentorMessages(state.mentorMessages);
+      if (state.theme) setTheme(state.theme);
+      
+      setProgress(100);
+      setLoadingMessage("Workspace Restored");
+      
+      setTimeout(() => {
+        setLoading(false);
+        trackEvent(Analytics.SESSION_RESUMED, {
+          method: 'file_import'
+        });
+      }, 500);
+    } catch (err: any) {
+      console.error("App: finalizeImport error:", err);
+      setError(`Workspace failed to boot: ${err.message || 'Unknown Error'}`);
+      setLoading(false);
+    }
   }, [pendingImport]);
 
   const handleStart = async (selectedIndustry: Industry, selectedDifficulty: Difficulty) => {
@@ -119,7 +132,6 @@ const App: React.FC = () => {
     setProgress(5);
     setLoadingMessage("Preparing environment");
 
-    // Track Mission Start in GA4
     trackEvent(Analytics.MISSION_STARTED, {
       industry: selectedIndustry,
       difficulty: selectedDifficulty
@@ -127,33 +139,42 @@ const App: React.FC = () => {
 
     const progressTimer = setInterval(() => {
       setProgress(prev => {
-        if (prev < 30) return prev + 2;
-        if (prev < 60) {
+        if (prev < 40) return prev + 3;
+        if (prev < 70) {
            setLoadingMessage("Configuring dataset schema");
            return prev + 1;
         }
-        if (prev < 85) {
+        if (prev < 90) {
            setLoadingMessage("Generating simulation data");
            return prev + 0.5;
         }
-        setLoadingMessage("Finalizing setup");
         return prev;
       });
-    }, 300);
+    }, 200);
 
     try {
       const newScenario = await generateScenario(selectedIndustry, selectedDifficulty);
+      
+      setLoadingMessage("Allocating memory for SQL core");
+      setProgress(95);
+      
+      // SQL is the mandatory part for entry. Python will handle itself in background.
+      await initEngines(newScenario);
+      
       setProgress(100);
-      setLoadingMessage("Ready");
+      setLoadingMessage("Forge Initialized");
       
       setTimeout(() => {
         setScenario(newScenario);
-        setMentorMessages([{ role: 'assistant', content: `The ${newScenario.companyName} data environment is now live. I've logged our primary objectives in the Mission Hub. How would you like to approach this investigation?` }]);
+        const introMessage = `The ${newScenario.companyName} data environment is now live. I've logged our primary objectives in the Mission Hub. How would you like to approach this investigation?`;
+        
+        setMentorMessages([{ role: 'assistant', content: introMessage }]);
         setLoading(false);
         clearInterval(progressTimer);
       }, 800);
     } catch (err: any) {
-      setError(err.message || "Initialization failed.");
+      console.error("App: handleStart error:", err);
+      setError(`Environment failure: ${err.message || 'Check connection.'}`);
       setIndustry(null);
       setScenario(null);
       setLoading(false);

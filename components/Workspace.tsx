@@ -63,17 +63,24 @@ const Workspace: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScena
 
         {/* Right Section - Action Bar */}
         <div className="flex items-center justify-end space-x-3">
-          <button 
-            onClick={onAbout}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-full border transition-all text-[9px] font-black uppercase tracking-widest shadow-sm ${
-              theme === 'dark' 
-                ? 'border-slate-800 bg-slate-900/40 text-slate-400 hover:text-slate-200 hover:bg-slate-900' 
-                : 'border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-            }`}
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span>About Me</span>
-          </button>
+          <div className="relative group">
+            {/* Glow Layer */}
+            <div className="absolute -inset-[1.5px] rounded-full blur-md opacity-30 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
+            {/* Moving Border Layer */}
+            <div className="absolute -inset-[1.2px] rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
+            
+            <button 
+              onClick={onAbout}
+              className={`relative flex items-center space-x-2 px-4 py-2.5 rounded-full transition-all text-[9px] font-black uppercase tracking-widest shadow-sm ${
+                theme === 'dark' 
+                  ? 'bg-[#0f172a] text-slate-200' 
+                  : 'bg-white text-slate-600'
+              }`}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>About Me</span>
+            </button>
+          </div>
           
           <button 
             onClick={toggleTheme}
