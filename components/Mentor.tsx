@@ -7,6 +7,7 @@ import { getMentorAdvice } from '../geminiService';
 import { marked } from "marked";
 // @ts-ignore
 import DOMPurify from "dompurify";
+import { trackEvent, Analytics } from '../analytics';
 
 interface Props {
   scenario: Scenario;
@@ -34,6 +35,11 @@ const Mentor: React.FC<Props> = ({ scenario, blocks, messages, setMessages }) =>
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
+
+    // Track advice request in GA4
+    trackEvent(Analytics.MENTOR_ADVICE_REQUESTED, {
+      query_length: userMessage.content.length
+    });
 
     try {
       const response = await getMentorAdvice(scenario, [...messages, userMessage], blocks);

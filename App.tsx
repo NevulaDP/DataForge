@@ -8,7 +8,9 @@ import Mentor from './components/Mentor';
 import MobileLockout from './components/MobileLockout';
 import AboutModal from './components/AboutModal';
 import ConfirmModal from './components/ConfirmModal';
+import CookieBanner from './components/CookieBanner';
 import { generateScenario } from './geminiService';
+import { trackEvent, Analytics, hasConsent } from './analytics';
 
 const SESSION_KEY = 'data_forge_session_v2';
 
@@ -40,6 +42,12 @@ const App: React.FC = () => {
         setBlocks(state.blocks);
         setMentorMessages(state.mentorMessages);
         if (state.theme) setTheme(state.theme);
+        
+        // Track session resumption (only if consent granted)
+        trackEvent(Analytics.SESSION_RESUMED, {
+          industry: state.industry,
+          difficulty: state.difficulty
+        });
       } catch (e) { localStorage.removeItem(SESSION_KEY); }
     }
   }, []);
@@ -76,7 +84,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleImport = useCallback((state: SessionState) => {
-    // Stage for confirmation
     setPendingImport(state);
   }, []);
 
@@ -90,6 +97,11 @@ const App: React.FC = () => {
     setMentorMessages(state.mentorMessages);
     if (state.theme) setTheme(state.theme);
     setPendingImport(null);
+    
+    trackEvent(Analytics.SESSION_RESUMED, {
+      method: 'file_import',
+      industry: state.industry
+    });
   }, [pendingImport]);
 
   const handleStart = async (selectedIndustry: Industry, selectedDifficulty: Difficulty) => {
@@ -99,6 +111,12 @@ const App: React.FC = () => {
     setError(null);
     setProgress(5);
     setLoadingMessage("Preparing environment");
+
+    // Track Mission Start in GA4
+    trackEvent(Analytics.MISSION_STARTED, {
+      industry: selectedIndustry,
+      difficulty: selectedDifficulty
+    });
 
     const progressTimer = setInterval(() => {
       setProgress(prev => {
@@ -139,6 +157,7 @@ const App: React.FC = () => {
   return (
     <>
       <MobileLockout theme={theme} />
+      <CookieBanner theme={theme} />
       <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} theme={theme} />
       <ConfirmModal 
         isOpen={!!pendingImport} 

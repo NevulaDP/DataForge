@@ -22,15 +22,37 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', theme = 'dark' }) => {
 
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]} group select-none`}>
-      {/* Container - Background and borders removed for a clean transparent look */}
+      <style>{`
+        @keyframes dash-crawl {
+          from { stroke-dashoffset: 0; }
+          to { stroke-dashoffset: 24; }
+        }
+        .animate-dash-crawl {
+          animation: dash-crawl 4s linear infinite;
+        }
+      `}</style>
+      
+      {/* Dynamic Gradient Glow - High intensity depth */}
+      <div className={`absolute inset-[-10px] rounded-full blur-[30px] transition-all duration-700 ease-in-out group-hover:blur-[40px] ${
+        isDark 
+          ? 'bg-gradient-to-tr from-blue-600/50 via-indigo-500/30 to-transparent opacity-70 group-hover:opacity-100' 
+          : 'bg-gradient-to-tr from-blue-400/30 via-blue-200/20 to-transparent opacity-50 group-hover:opacity-70'
+      }`} />
+
+      {/* Pulsing Core Glow */}
+      <div className={`absolute w-3/4 h-3/4 rounded-full blur-xl animate-pulse transition-colors duration-500 ${
+        isDark ? 'bg-blue-500/25' : 'bg-blue-400/15'
+      }`} />
+
+      {/* Container */}
       <div className={`relative z-10 flex items-center justify-center transition-all duration-500 ${sizeClasses[size]}`}>
         <svg 
-          width="85%" 
-          height="85%" 
+          width="80%" 
+          height="80%" 
           viewBox="0 0 48 48" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
-          className="relative z-20 transition-transform duration-500 ease-out group-hover:scale-110"
+          className="relative z-20 transition-transform duration-500 ease-out group-hover:scale-105"
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
@@ -47,7 +69,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', theme = 'dark' }) => {
           <path 
             d="M24 4L40.4545 13.5V34.5L24 44L7.54545 34.5V13.5L24 4Z" 
             stroke={`url(#${gradientId})`}
-            strokeWidth="2.5" 
+            strokeWidth="3" 
             strokeLinejoin="round" 
             className="opacity-100"
           />
@@ -64,25 +86,32 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', theme = 'dark' }) => {
 
           {/* Data Strike Line */}
           <rect 
-            x="23" 
-            y="10" 
-            width="2" 
-            height="10" 
+            x="23" y="10" 
+            width="2" height="10" 
             rx="1" 
             fill={isDark ? "white" : "#1E293B"} 
             style={{ filter: isDark ? `url(#${filterId})` : 'none' }}
           />
-
-          {/* Floating Data Nodes */}
-          <rect x="18" y="14" width="2" height="2" fill={isDark ? "#93C5FD" : "#2563EB"} className="animate-pulse" />
-          <rect x="28" y="12" width="2" height="2" fill={isDark ? "#93C5FD" : "#2563EB"} className="animate-pulse" style={{ animationDelay: '1s' }} />
         </svg>
       </div>
 
-      {/* Outer Floating Hexagonal Orbit */}
-      <div className={`absolute inset-[-4px] border rounded-full animate-[spin_30s_linear_infinite] pointer-events-none transition-colors duration-500 border-dashed ${
-        isDark ? 'border-blue-500/20' : 'border-blue-500/10'
-      }`} />
+      {/* Outer Dashed Frame - Static "Bloat Square" with Moving Dashes */}
+      <div className="absolute inset-[-6px] pointer-events-none">
+        <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <rect 
+            x="2" y="2" 
+            width="96" height="96" 
+            rx="28" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3" 
+            strokeDasharray="10,10"
+            className={`animate-dash-crawl transition-colors duration-500 ${
+              isDark ? 'text-blue-500/30' : 'text-blue-500/20'
+            }`}
+          />
+        </svg>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,4 @@
 
-// Add missing imports to resolve React, useState, and useRef errors
 import React, { useState, useRef } from 'react';
 import { Scenario, SessionState, NotebookBlock } from '../types';
 import Logo from './Logo';
@@ -8,6 +7,7 @@ import { Target, CheckCircle2, Circle, ChevronLeft, ChevronRight, Save, FolderOp
 import { marked } from "marked";
 // @ts-ignore
 import DOMPurify from "dompurify";
+import { trackEvent, Analytics } from '../analytics';
 
 interface Props {
   scenario: Scenario;
@@ -297,6 +297,13 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, onUpdateScenari
 
     try {
       const state = getCurrentState();
+      
+      // Track Export in GA4
+      trackEvent(Analytics.REPORT_EXPORTED, {
+        company: scenario.companyName,
+        objectives_completed: scenario.objectives.filter(o => o.completed).length
+      });
+
       const reportHtml = getReportHtml(state);
       const printWindow = window.open('', '_blank', 'width=1000,height=800');
       
@@ -318,6 +325,13 @@ const Sidebar: React.FC<Props> = ({ scenario, onReset, onImport, onUpdateScenari
 
   const handleExportFile = () => {
     const state = getCurrentState();
+    
+    // Track Save in GA4
+    trackEvent(Analytics.PROJECT_SAVED, {
+      industry: scenario.industry,
+      block_count: state.blocks.length
+    });
+
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

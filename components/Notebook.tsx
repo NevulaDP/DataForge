@@ -17,6 +17,7 @@ import { tags as t } from "@lezer/highlight";
 import { marked } from "marked";
 // @ts-ignore
 import DOMPurify from "dompurify";
+import { trackEvent, Analytics } from '../analytics';
 
 interface Props {
   scenario: Scenario;
@@ -154,17 +155,12 @@ const Toggle = ({ label, active, onChange }: { label: string, active: boolean, o
 const AddBlockSeparator = ({ onAdd }: { onAdd: (type: 'text' | 'python' | 'sql') => void }) => {
   return (
     <div className="group relative h-12 flex items-center justify-center -my-6 z-20">
-      {/* Subtle line */}
       <div className="absolute inset-x-0 h-px bg-slate-200 dark:bg-slate-800 opacity-20 group-hover:opacity-40 transition-opacity" />
-      
-      {/* Action Pills - Minimalist */}
       <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
         <button onClick={() => onAdd('text')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ Insight</button>
         <button onClick={() => onAdd('python')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ Python</button>
         <button onClick={() => onAdd('sql')} className="px-5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-blue-500 hover:border-blue-500/50 transition-all shadow-sm">+ SQL</button>
       </div>
-
-      {/* Simplified Persistent Node */}
       <div className="absolute flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity duration-300">
         <div className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-center shadow-md">
           <Plus className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
@@ -216,10 +212,15 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
     const block = blocks.find(b => b.id === id);
     if (!block || block.type !== 'code') return;
     setExecutingId(id);
+    
+    // Track execution in GA4
+    trackEvent(Analytics.CODE_EXECUTED, {
+      language: block.language,
+      code_length: block.content.length
+    });
+
     try {
       const result = await executeCode(block.language!, block.content, theme);
-      
-      // If code execution resulted in synchronized table updates, reflect them in the UI
       if (result.sync) {
         const updatedTables = scenario.tables.map(table => {
           if (result.sync![table.name]) {
@@ -229,7 +230,6 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
         });
         onUpdateScenario({ ...scenario, tables: updatedTables });
       }
-
       setBlocks(prev => prev.map(b => b.id === id ? { ...b, output: { type: result.type, data: result.data, logs: result.logs } } : b));
     } catch (e: any) {
       setBlocks(prev => prev.map(b => b.id === id ? { ...b, output: { type: 'error', data: e.message } } : b));
