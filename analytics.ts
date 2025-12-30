@@ -41,7 +41,8 @@ export const trackEvent = (eventName: string, params: Record<string, any> = {}) 
     window.gtag('event', eventName, {
       ...params,
       platform: 'DataForge Simulator',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      debug_mode: true // Forces event to show in GA4 DebugView immediately
     });
     console.debug(`[Analytics] Sent to GA4: ${eventName}`, params);
   } else {
@@ -58,5 +59,6 @@ export const Analytics = {
   PROJECT_SAVED: 'project_saved',
   REPORT_EXPORTED: 'report_exported',
   MENTOR_ADVICE_REQUESTED: 'mentor_advice',
-  SESSION_RESUMED: 'session_resumed'
+  SESSION_RESUMED: 'session_resumed',
+  ABOUT_VIEWED: 'about_viewed'
 };

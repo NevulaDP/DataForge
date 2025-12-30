@@ -70,6 +70,13 @@ const App: React.FC = () => {
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
+  const handleOpenAbout = useCallback(() => {
+    setIsAboutOpen(true);
+    trackEvent(Analytics.ABOUT_VIEWED, {
+      context: scenario ? 'active_session' : 'onboarding'
+    });
+  }, [scenario]);
+
   const handleReset = useCallback(() => {
     if (window.confirm("Terminate project? Progress will be erased.")) {
       setScenario(null);
@@ -171,7 +178,7 @@ const App: React.FC = () => {
         <Onboarding 
           onSelect={handleStart} 
           onImport={handleImport} 
-          onAbout={() => setIsAboutOpen(true)}
+          onAbout={handleOpenAbout}
           loading={loading} 
           loadingMessage={loadingMessage} 
           progress={progress}
@@ -197,7 +204,7 @@ const App: React.FC = () => {
               onUpdateScenario={s => setScenario(s)} 
               theme={theme} 
               toggleTheme={toggleTheme} 
-              onAbout={() => setIsAboutOpen(true)}
+              onAbout={handleOpenAbout}
               onReset={handleReset} 
             />
             <Mentor 

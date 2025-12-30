@@ -22,7 +22,8 @@
       });
 
       gtag('js', new Date());
-      gtag('config', 'G-YE10NPXBHF');
+      // debug_mode: true ensures events appear in the GA4 DebugView immediately
+      gtag('config', 'G-YE10NPXBHF', { 'debug_mode': true });
     </script>
 
     <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
