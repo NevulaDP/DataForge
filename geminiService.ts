@@ -36,11 +36,12 @@ const augmentSingleTable = (seed: any[], targetRows: number): any[] => {
     for (const key of keys) {
       const val = newRow[key];
       
-      // Preserving A/B test groups and IDs to maintain relational integrity
+      // Avoid modifying IDs to maintain FK relations to Dim tables
       if (key.toLowerCase().includes('group') || key.toLowerCase().includes('variant') || key.toLowerCase().includes('id')) {
         continue;
       }
 
+      // Add noise and nulls
       if (Math.random() < 0.03) {
         if (Math.random() < 0.5) {
           newRow[key] = null;
@@ -50,12 +51,12 @@ const augmentSingleTable = (seed: any[], targetRows: number): any[] => {
         continue;
       }
 
+      // Gaussian-ish variance
       if (typeof val === 'number') {
-        const variance = 0.92 + Math.random() * 0.16; // Slight variance +/- 8%
+        const variance = 0.92 + Math.random() * 0.16;
         newRow[key] = Number((val * variance).toFixed(2));
       } else if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const d = new Date(val);
-        // Ensure dates drift backwards more naturally for time-series
         d.setDate(d.getDate() - Math.floor(Math.random() * 120));
         newRow[key] = d.toISOString().split('T')[0];
       }
@@ -69,9 +70,9 @@ export const generateScenario = async (industry: Industry, difficulty: Difficult
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const difficultyPrompt = {
-    beginner: "A single dataset with ~15 columns. Focus on basic exploratory analysis and simple aggregations.",
-    intermediate: "2-3 related tables. Scenario could involve either deep exploratory analysis (e.g. identifying churn factors) OR an experimental validation (e.g. an A/B test with a 'test_group' column). Choose the most natural business narrative.",
-    advanced: "A Star Schema with complex relational logic. Challenge should involve either advanced time-series decay analysis (e.g. cohort retention) OR a multi-variant experiment requiring statistical rigor."
+    beginner: "Generate EXACTLY 1 table. Focus on flat-file exploratory analysis and simple aggregations.",
+    intermediate: "Generate EXACTLY 3 related tables. This should involve a primary transaction/event table and 2 dimension/metadata tables (e.g. Orders, Customers, and Products).",
+    advanced: "Generate EXACTLY 4 or 5 tables. This must be a full Star Schema: 1 large Fact table and 3-4 distinct Dimension tables. The scenario must require multi-way joins and complex relational logic."
   }[difficulty];
 
   return withRetry(async () => {
@@ -80,17 +81,25 @@ export const generateScenario = async (industry: Industry, difficulty: Difficult
       contents: `Generate a high-stakes data analysis mission for an analyst in the ${industry} sector.
       
       Difficulty Level: ${difficulty}
-      Data Structure Requirements: ${difficultyPrompt}
+      Table Count Requirement: ${difficultyPrompt}
+      
+      SCHEMA DATA TYPE RULES:
+      You MUST ONLY use the following types for columns:
+      - 'string' (for text, IDs, or categories)
+      - 'float' (for decimals, currency, rates, metrics) - NEVER use 'decimal' or 'number'
+      - 'integer' (for counts, whole numbers)
+      - 'date' (for YYYY-MM-DD formatted strings)
+      - 'boolean' (for true/false)
       
       Schema Instructions:
       - For each table, provide a name, schema (name, type, description, isPk), and sample data (20-30 rows).
-      - Relational integrity (FKs) must be maintained for intermediate/advanced missions.
-      - ONLY include a 'test_group' or 'variant' column if the business case you choose actually requires an experiment or A/B test.
+      - Relational integrity (FKs) is CRITICAL. IDs in the Fact table must correspond to IDs in the Dimension tables.
+      - Ensure column names are descriptive and professional.
       
       Mission Requirements:
-      1. Organization name.
-      2. Problem statement involving a realistic business hurdle (e.g., 'Optimize inventory turnover' or 'Analyze why a specific user segment is churning').
-      3. Define 4 Strategic objectives. Phrase them as analytical goals. If you chose an experimental scenario, include objectives for 'lift' or significance. If you chose an exploratory scenario, focus on finding drivers, trends, or outliers.
+      1. Organization name (invent a professional-sounding name).
+      2. Problem statement involving a realistic business hurdle.
+      3. Define 4 Strategic objectives phrased as analytical goals.
       
       Return as JSON.`,
       config: {
@@ -117,21 +126,27 @@ export const generateScenario = async (industry: Industry, difficulty: Difficult
                 type: Type.OBJECT,
                 properties: {
                   name: { type: Type.STRING },
-                  isFactTable: { type: Type.BOOLEAN },
+                  isFactTable: { 
+                    type: Type.BOOLEAN, 
+                    description: "True if this is the primary transactional/event table to be scaled." 
+                  },
                   schema: {
                     type: Type.ARRAY,
                     items: {
                       type: Type.OBJECT,
                       properties: {
                         name: { type: Type.STRING },
-                        type: { type: Type.STRING },
+                        type: { 
+                          type: Type.STRING, 
+                          description: "Allowed values: 'string', 'float', 'integer', 'date', 'boolean'" 
+                        },
                         description: { type: Type.STRING },
                         isPk: { type: Type.BOOLEAN }
                       },
                       required: ["name", "type", "description", "isPk"]
                     }
                   },
-                  sampleData: { type: Type.STRING, description: "JSON stringified array of data rows" }
+                  sampleData: { type: Type.STRING, description: "JSON stringified array of data rows (min 25 rows)" }
                 },
                 required: ["name", "schema", "sampleData"]
               }
@@ -143,20 +158,40 @@ export const generateScenario = async (industry: Industry, difficulty: Difficult
     });
 
     const result = JSON.parse(response.text || '{}');
-    const finalTables: DataTable[] = result.tables.map((t: any) => {
+    
+    // Improved logic to distinguish Fact vs Dim tables
+    const hasExplicitFact = result.tables.some((t: any) => t.isFactTable === true);
+    
+    // If no explicit fact is marked, find the best candidate via keyword matching
+    const factKeywords = ['transaction', 'sale', 'event', 'order', 'click', 'log', 'fact', 'revenue', 'metric'];
+    let fallbackFactIndex = -1;
+    if (!hasExplicitFact) {
+      fallbackFactIndex = result.tables.findIndex((t: any) => 
+        factKeywords.some(k => t.name.toLowerCase().includes(k))
+      );
+      // Final fallback if keywords fail but we have tables
+      if (fallbackFactIndex === -1 && result.tables.length > 0) fallbackFactIndex = 0;
+    }
+
+    const finalTables: DataTable[] = result.tables.map((t: any, idx: number) => {
       let parsedData = [];
       try {
         parsedData = typeof t.sampleData === 'string' ? JSON.parse(t.sampleData) : t.sampleData;
       } catch (e) { parsedData = []; }
 
-      const shouldScale = t.isFactTable || result.tables.length === 1 || t.name.toLowerCase().includes('transaction') || t.name.toLowerCase().includes('sale') || t.name.toLowerCase().includes('event');
-      const targetRows = shouldScale ? (10000 + Math.floor(Math.random() * 5500)) : parsedData.length;
+      // A table is scaled to 15k rows only if it is the primary Fact table.
+      // Dimension tables (Customers, Products, etc.) should maintain their original cardinality.
+      const shouldScale = hasExplicitFact ? !!t.isFactTable : (idx === fallbackFactIndex);
+      
+      const targetRows = shouldScale 
+        ? (12000 + Math.floor(Math.random() * 4500)) 
+        : parsedData.length;
       
       return {
         name: t.name,
         schema: t.schema,
         data: shouldScale ? augmentSingleTable(parsedData, targetRows) : parsedData,
-        isFactTable: !!t.isFactTable
+        isFactTable: shouldScale
       };
     });
 
@@ -174,33 +209,44 @@ export const generateScenario = async (industry: Industry, difficulty: Difficult
 
 export const getMentorAdvice = async (scenario: Scenario, currentHistory: ChatMessage[], currentWork: NotebookBlock[]): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const historyParts = currentHistory.map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: msg.content }]
+  }));
+
+  const systemInstruction = `You are a world-class Socratic Tutor and Data Strategy Mentor.
+
+  YOUR MISSION:
+  Empower the analyst to solve the business problem using their own critical thinking. 
+  Respond to their questions and analysis by nudging them toward deep insight.
+
+  MISSION CONTEXT:
+  - Organization: ${scenario.companyName} (${scenario.industry})
+  - Case: ${scenario.problemStatement}
+  - Objectives: ${scenario.objectives.map(o => `[${o.completed ? 'COMPLETED' : 'OPEN'}] ${o.task}`).join(', ')}
+  - Tables Available: ${scenario.tables.map(t => `${t.name} (${t.data.length} rows): [${t.schema.map(s => s.name).join(', ')}]`).join(' | ')}
+  
+  ANALYST ACTIVITY (Last Notebook Blocks):
+  ${currentWork.map(b => `- [${b.type.toUpperCase()}${b.language ? ':' + b.language : ''}] ${b.content.substring(0, 150)}... ${b.output ? '(Has Results)' : '(No results)'}`).join('\n')}
+
+  TUTORING PROTOCOLS:
+  1. KPI FOCUS: If they are calculating metrics, ask how that metric translates to business health.
+  2. CAUSALITY VS CORRELATION: If they identify a trend, nudge them to look for confounding variables.
+  3. NO SPOILERS: Never provide direct SQL queries or Python snippets.
+  4. STRATEGIC ROI: Help them quantify the "so what" of their findings.
+  5. BE CONCISE: Analysts are busy. Keep your nudges punchy and impactful.`;
+
   return withRetry(async () => {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `You are a world-class Socratic Tutor and Data Strategy Mentor.
-
-      YOUR MISSION:
-      Empower the analyst to solve the business problem using their own critical thinking.
-
-      MISSION CONTEXT:
-      - Organization: ${scenario.companyName} (${scenario.industry})
-      - Case: ${scenario.problemStatement}
-      - Objectives: ${JSON.stringify(scenario.objectives)}
-      - Tables: ${scenario.tables.map(t => `${t.name}: [${t.schema.map(s => s.name).join(', ')}]`).join(' | ')}
-      
-      ANALYST ACTIVITY:
-      - Last Notebook States: ${JSON.stringify(currentWork.map(b => ({ type: b.type, content: b.content.substring(0, 100), hasOutput: !!b.output })))}
-
-      TUTORING PROTOCOLS:
-      1. KPI FOCUS: If they are calculating metrics, ask how that metric translates to business health.
-      2. CAUSALITY VS CORRELATION: If they identify a trend, nudge them to look for confounding variables.
-      3. EXPERIMENTAL RIGOR (If applicable): If an A/B test is present, guide them toward statistical significance without giving them the code.
-      4. NO SPOILERS: Never provide direct SQL queries or Python snippets.
-      5. STRATEGIC ROI: Help them quantify the "so what" of their findings.`,
+      contents: historyParts,
       config: {
+        systemInstruction,
         thinkingConfig: { thinkingBudget: 8000 }
       }
     });
+    
     return response.text || "I'm reviewing your analysis. What primary driver do you suspect is influencing these results?";
   });
 };

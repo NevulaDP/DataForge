@@ -7,6 +7,7 @@ let SQL: any = null;
 let initializationPromise: Promise<{ sql: boolean; python: boolean }> | null = null;
 let currentLoadedScenarioId: string | null = null;
 let isMatplotlibLoaded = false;
+let currentScenarioTableNames: string[] = [];
 
 export type PythonStatus = 'idle' | 'loading' | 'ready' | 'error';
 let currentPythonStatus: PythonStatus = 'idle';
@@ -112,6 +113,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 };
 
 export const initEngines = async (scenario: Scenario): Promise<{ sql: boolean; python: boolean }> => {
+  currentScenarioTableNames = scenario.tables.map(t => t.name);
+  
   if (initializationPromise) {
     await initializationPromise;
     if (currentLoadedScenarioId !== scenario.id) {
@@ -230,6 +233,7 @@ export const executeCode = async (language: 'python' | 'sql', code: string, them
     try {
       pyodide.globals.set("__user_code__", code);
       pyodide.globals.set("__theme__", theme);
+      pyodide.globals.set("__target_tables__", pyodide.toPy(currentScenarioTableNames));
       const runner = `
 import json, pandas as pd, numpy as np, io, base64, sys, traceback, gc
 out_capture = io.StringIO()
@@ -292,9 +296,12 @@ if response_type != "error":
         pass
 
 sync_payload = {}
-for name, obj in list(globals().items()):
-    if isinstance(obj, pd.DataFrame) and not name.startswith('_'):
-        sync_payload[name] = obj.head(500).replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
+# Only sync dataframes that were part of the original scenario to keep state manageable
+# But sync the FULL table (no .head()) to ensure cardinal integrity for saves
+for name in __target_tables__:
+    if name in globals() and isinstance(globals()[name], pd.DataFrame):
+        obj = globals()[name]
+        sync_payload[name] = obj.replace({np.nan: None, np.inf: None, -np.inf: None}).to_dict(orient='records')
 
 gc.collect()
 json.dumps({"type": response_type, "data": response_data, "logs": logs, "sync": sync_payload})

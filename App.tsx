@@ -166,7 +166,17 @@ const App: React.FC = () => {
       
       setTimeout(() => {
         setScenario(newScenario);
-        const introMessage = `The ${newScenario.companyName} data environment is now live. I've logged our primary objectives in the Mission Hub. How would you like to approach this investigation?`;
+        
+        const introMessage = `### 🎯 MISSION BRIEFING: ${newScenario.companyName}
+
+Welcome to the team. We have a critical situation: **${newScenario.problemStatement}**
+
+I have initialized your workspace with the relevant production datasets. You can find our specific strategic goals in the **Mission Hub** on the sidebar.
+
+**Your first priority:**
+${newScenario.objectives[0].task}
+
+I recommend starting with the **Dataset Explorer** to understand the schema, then creating your first SQL or Python block to verify the data quality. How do you want to proceed?`;
         
         setMentorMessages([{ role: 'assistant', content: introMessage }]);
         setLoading(false);
