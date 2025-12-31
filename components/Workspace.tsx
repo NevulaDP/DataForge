@@ -95,8 +95,8 @@ const Workspace: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScena
           <Notebook scenario={scenario} blocks={blocks} setBlocks={setBlocks} onUpdateScenario={onUpdateScenario} theme={theme} />
         )}
         
-        {/* REFINED FOOTER CREDITS */}
-        <footer className="w-full py-16 flex flex-col items-center justify-center space-y-4 transition-all duration-700 opacity-20 hover:opacity-100 group/footer">
+        {/* REFINED FOOTER CREDITS - Tightened padding to prevent scroll */}
+        <footer className="w-full py-4 flex flex-col items-center justify-center space-y-4 transition-all duration-700 opacity-20 hover:opacity-100 group/footer">
           <div className={`h-px w-24 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-800 to-transparent transition-all group-hover/footer:w-48`} />
           <div className="flex flex-col items-center space-y-1.5">
             <p className={`text-[8px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}`}>

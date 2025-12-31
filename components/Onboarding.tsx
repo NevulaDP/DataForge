@@ -57,7 +57,7 @@ const ANALYST_TIPS = [
 ];
 
 const NeuralCore: React.FC<{ theme: 'light' | 'dark'; progress: number }> = ({ theme, progress }) => (
-  <div className="relative w-56 h-56 flex items-center justify-center">
+  <div className="relative w-48 h-48 flex items-center justify-center">
     <svg className="absolute w-full h-full animate-[spin_20s_linear_infinite]" viewBox="0 0 100 100">
       <circle 
         cx="50" 
@@ -124,17 +124,17 @@ const Onboarding: React.FC<Props> = ({
   const currentDiffLabel = difficulties.find(d => d.id === selectedDifficulty);
 
   return (
-    <div className={`min-h-screen flex flex-col items-center p-8 transition-colors duration-500 font-['Plus_Jakarta_Sans'] overflow-x-hidden ${
+    <div className={`h-screen flex flex-col items-center p-6 md:p-8 transition-colors duration-500 font-['Plus_Jakarta_Sans'] overflow-hidden ${
       theme === 'dark' ? 'bg-[#020617] text-white' : 'bg-slate-50 text-slate-950'
     }`}>
       
       {/* PERSISTENT ACTION BAR */}
-      <div className="fixed top-8 right-8 z-[110] flex items-center space-x-4">
+      <div className="fixed top-6 right-6 md:top-8 md:right-8 z-[110] flex items-center space-x-4">
         {!loading && (
           <>
             <button 
               onClick={() => fileInputRef.current?.click()} 
-              className={`flex items-center space-x-3 px-6 py-2.5 rounded-full border-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center space-x-3 px-6 py-3 rounded-full border-2 text-[11px] font-black uppercase tracking-widest transition-all ${
                 theme === 'dark' 
                   ? 'border-slate-800 text-white hover:bg-slate-900 bg-slate-900/50' 
                   : 'border-slate-300 text-slate-700 hover:bg-white bg-white/50 shadow-sm'
@@ -150,7 +150,7 @@ const Onboarding: React.FC<Props> = ({
               
               <button 
                 onClick={onAbout}
-                className={`relative flex items-center space-x-3 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`relative flex items-center space-x-3 px-6 py-3 rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${
                   theme === 'dark' 
                     ? 'bg-[#0f172a] text-white' 
                     : 'bg-white text-slate-700'
@@ -179,14 +179,14 @@ const Onboarding: React.FC<Props> = ({
           theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'
         }`}>
           <div className="relative z-10 flex flex-col items-center max-w-2xl w-full px-8 text-center">
-            <div className="relative mb-20 flex items-center justify-center">
+            <div className="relative mb-12 flex items-center justify-center">
               <NeuralCore theme={theme} progress={progress} />
             </div>
             
-            <div className="w-full space-y-12">
+            <div className="w-full space-y-8">
               <div className="space-y-4">
-                <div className="flex items-center justify-center h-48">
-                  <h2 className={`text-4xl md:text-5xl font-black uppercase tracking-[0.3em] leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                <div className="flex items-center justify-center h-32">
+                  <h2 className={`text-3xl md:text-4xl font-black uppercase tracking-[0.3em] leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     {loadingMessage}
                   </h2>
                 </div>
@@ -196,24 +196,24 @@ const Onboarding: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className={`relative w-full h-12 rounded-full border p-[5px] overflow-hidden ${theme === 'dark' ? 'bg-slate-900 border-slate-800 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-inner'}`}>
+              <div className={`relative w-full h-10 rounded-full border p-[4px] overflow-hidden ${theme === 'dark' ? 'bg-slate-900 border-slate-800 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]' : 'bg-white border-slate-200 shadow-inner'}`}>
                 <div className="h-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-[0_0_20px_rgba(37,99,235,0.4)] relative" style={{ width: `${progress}%` }}>
                 </div>
               </div>
             </div>
 
-            <div className={`mt-24 pt-12 border-t w-full ${theme === 'dark' ? 'border-slate-800/50' : 'border-slate-200'}`}>
-              <p className={`text-base font-semibold italic tracking-tight ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>"{ANALYST_TIPS[tipIndex]}"</p>
+            <div className={`mt-16 pt-8 border-t w-full ${theme === 'dark' ? 'border-slate-800/50' : 'border-slate-200'}`}>
+              <p className={`text-sm font-semibold italic tracking-tight ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>"{ANALYST_TIPS[tipIndex]}"</p>
             </div>
           </div>
         </div>
       )}
 
       {/* TOP HEADER */}
-      <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-12 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-6 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="flex items-center space-x-4">
           <Logo size="md" theme={theme} />
-          <span className={`font-black text-[12px] uppercase tracking-[0.4em] opacity-90 ${theme === 'dark' ? 'text-white' : 'text-slate-600'}`}>DataForge</span>
+          <span className={`font-black text-[12px] uppercase tracking-[0.4em] opacity-80 ${theme === 'dark' ? 'text-white' : 'text-slate-600'}`}>DataForge</span>
         </div>
       </div>
 
@@ -242,28 +242,28 @@ const Onboarding: React.FC<Props> = ({
             </div>
             <div className="space-y-3">
               <h1 className={`text-5xl md:text-7xl font-black tracking-tight leading-[1.1] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
-                Find your <span className={`inline-block bg-gradient-to-r ${theme === 'dark' ? 'from-blue-400' : 'from-blue-700'} via-indigo-600 to-purple-700 bg-clip-text text-transparent pb-4 pt-2 -mb-4 -mt-2`}>data edge.</span>
+                Find your <span className={`inline-block bg-gradient-to-r ${theme === 'dark' ? 'from-blue-400' : 'from-blue-700'} via-indigo-600 to-purple-700 bg-clip-text text-transparent pb-3 pt-1 -mb-3 -mt-1`}>data edge.</span>
               </h1>
-              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} text-base md:text-lg font-medium leading-relaxed max-w-3xl`}>
+              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} text-base md:text-lg font-medium leading-relaxed max-w-4xl`}>
                 Master the end-to-end analytical workflow. Solve complex enterprise business cases using SQL and Python with targeted strategic mentorship.
               </p>
             </div>
           </div>
 
-          {error && <div className="p-4 rounded-[24px] bg-rose-500/10 border-2 border-rose-500/20 text-rose-500 font-bold text-sm">{error}</div>}
+          {error && <div className="p-3 rounded-[20px] bg-rose-500/10 border-2 border-rose-500/20 text-rose-500 font-bold text-xs">{error}</div>}
 
           <div className="space-y-8">
             <div className="relative group w-full">
-              <div className="absolute -inset-[2px] rounded-full blur-xl opacity-40 group-focus-within:opacity-80 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
+              <div className="absolute -inset-[2px] rounded-full blur-xl opacity-30 group-focus-within:opacity-70 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
               <div className="absolute -inset-[1.5px] rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move shadow-[0_0_20px_-5px_rgba(37,99,235,0.3)]" />
 
-              <div className={`relative flex items-center w-full rounded-full transition-all duration-500 p-2.5 pr-3 shadow-2xl ${
+              <div className={`relative flex items-center w-full rounded-full transition-all duration-500 p-3 pr-3.5 shadow-2xl ${
                 theme === 'dark' 
                   ? 'bg-[#0f172a]' 
                   : 'bg-white'
               }`}>
                 
-                <div className="pl-5 pr-1">
+                <div className="pl-5 pr-2">
                   <Search className={`w-5 h-5 transition-colors duration-300 ${theme === 'dark' ? 'text-slate-500/40 group-focus-within:text-blue-500/40' : 'text-slate-500 group-focus-within:text-blue-600'}`} />
                 </div>
 
@@ -272,7 +272,7 @@ const Onboarding: React.FC<Props> = ({
                   value={customIndustry}
                   onChange={(e) => setCustomIndustry(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStart(customIndustry)}
-                  placeholder="Ask DataForge for a specific sector..."
+                  placeholder="Ask DataForge for a specific sector.."
                   className={`flex-1 bg-transparent border-none focus:ring-0 py-4 px-3 text-lg font-medium ${theme === 'dark' ? 'placeholder:text-slate-500/40 text-white' : 'placeholder:text-slate-500 text-slate-900'}`}
                 />
 
@@ -280,7 +280,7 @@ const Onboarding: React.FC<Props> = ({
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDiffOpen(!isDiffOpen)}
-                      className={`flex items-center space-x-2 px-5 py-2.5 rounded-full border transition-all ${
+                      className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-full border transition-all ${
                         theme === 'dark' 
                           ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-300' 
                           : 'border-slate-300 bg-slate-50 hover:bg-white text-slate-700'
@@ -322,7 +322,7 @@ const Onboarding: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-1">
               {industryPresets.map((ind) => (
                 <button 
                   key={ind.name} 
@@ -344,10 +344,10 @@ const Onboarding: React.FC<Props> = ({
       </div>
 
       {/* REFINED FOOTER CREDITS */}
-      <footer className={`w-full mt-12 pb-8 flex flex-col items-center justify-center space-y-4 transition-all duration-700 ${loading ? 'opacity-0' : 'opacity-30 hover:opacity-100'}`}>
-        <div className={`h-px w-24 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-800 to-transparent`} />
-        <div className="flex flex-col items-center space-y-1.5 text-center">
-          <p className={`text-[9px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+      <footer className={`w-full py-4 mt-auto flex flex-col items-center justify-center space-y-3 transition-all duration-700 ${loading ? 'opacity-0' : 'opacity-30 hover:opacity-100'}`}>
+        <div className={`h-px w-16 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-800 to-transparent`} />
+        <div className="flex flex-col items-center space-y-1 text-center">
+          <p className={`text-[8px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
             DataForge <span className="opacity-40 font-bold ml-1">2025</span>
           </p>
           <a 
