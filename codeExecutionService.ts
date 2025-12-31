@@ -54,9 +54,6 @@ const syncToSql = (tableName: string, records: any[]) => {
   } catch (e) { console.error(`[SQL Sync Error]:`, e); }
 };
 
-/**
- * Injects data into Python safely.
- */
 const injectDataToPython = async (scenario: Scenario) => {
   if (!pyodide) return;
   try {
@@ -78,9 +75,6 @@ gc.collect()
   }
 };
 
-/**
- * Isolated Python Bootstrapper.
- */
 const bootPythonInternal = async (scenario: Scenario) => {
   if (currentPythonStatus === 'ready' || currentPythonStatus === 'loading') return;
   
@@ -88,9 +82,7 @@ const bootPythonInternal = async (scenario: Scenario) => {
   pythonErrorMessage = null;
   
   try {
-    // Force clean state
     pyodide = null;
-    
     // @ts-ignore
     pyodide = await window.loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/"
@@ -119,10 +111,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
   }
 };
 
-/**
- * Primary Entry Point.
- * Resolves as soon as SQL/Data is ready. Python is optional.
- */
 export const initEngines = async (scenario: Scenario): Promise<{ sql: boolean; python: boolean }> => {
   if (initializationPromise) {
     await initializationPromise;
@@ -138,7 +126,6 @@ export const initEngines = async (scenario: Scenario): Promise<{ sql: boolean; p
     try {
       await waitForGlobals(['initSqlJs', 'loadPyodide']);
 
-      // 1. BOOT SQL (Fast)
       if (!SQL) {
         // @ts-ignore
         SQL = await window.initSqlJs({ 
@@ -148,11 +135,10 @@ export const initEngines = async (scenario: Scenario): Promise<{ sql: boolean; p
       if (!sqlDb) sqlDb = new SQL.Database();
       for (const table of scenario.tables) syncToSql(table.name, table.data);
 
-      // 2. TRIGGER PYTHON (Async, No Await)
       bootPythonInternal(scenario).catch(() => {});
 
       currentLoadedScenarioId = scenario.id;
-      return { sql: true, python: false }; // Python is false because it's still loading
+      return { sql: true, python: false };
     } catch (err: any) {
       initializationPromise = null;
       throw err;
@@ -191,15 +177,16 @@ plt.show = lambda *args, **kwargs: plt.draw()
 
 export const getDynamicSymbols = async (language: 'python' | 'sql') => {
   if (language === 'python') {
-    if (!pyodide || currentPythonStatus !== 'ready') return { dataframes: {} };
+    if (!pyodide || currentPythonStatus !== 'ready') return { dataframes: {}, variables: [] };
     try {
       const jsonStr = await pyodide.runPythonAsync(`
 import json, pandas as pd
-symbols = {name: obj.columns.tolist() for name, obj in globals().items() if isinstance(obj, pd.DataFrame) and not name.startswith('_')}
-json.dumps({"dataframes": symbols})
+df_symbols = {name: obj.columns.tolist() for name, obj in globals().items() if isinstance(obj, pd.DataFrame) and not name.startswith('_')}
+var_symbols = [name for name, obj in globals().items() if not name.startswith('_') and not isinstance(obj, pd.DataFrame) and not callable(obj) and name not in ['pd', 'np', 'plt', 'json', 'io', 'base64', 'sys', 'traceback', 'gc']]
+json.dumps({"dataframes": df_symbols, "variables": var_symbols})
       `);
       return JSON.parse(jsonStr);
-    } catch (e) { return { dataframes: {} }; }
+    } catch (e) { return { dataframes: {}, variables: [] }; }
   } else {
     if (!sqlDb) return { tables: {} };
     try {

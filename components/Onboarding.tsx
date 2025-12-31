@@ -16,8 +16,6 @@ import {
   Upload, 
   Sparkles,
   ChevronDown,
-  Terminal,
-  Database,
   Info
 } from 'lucide-react';
 
@@ -94,8 +92,9 @@ const Onboarding: React.FC<Props> = ({
   const [isDiffOpen, setIsDiffOpen] = useState(false);
   const [customIndustry, setCustomIndustry] = useState('');
   const [tipIndex, setTipIndex] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (loading) {
@@ -125,7 +124,7 @@ const Onboarding: React.FC<Props> = ({
   const currentDiffLabel = difficulties.find(d => d.id === selectedDifficulty);
 
   return (
-    <div className={`min-h-screen flex flex-col items-center p-8 transition-colors duration-500 font-['Plus_Jakarta_Sans'] overflow-hidden ${
+    <div className={`min-h-screen flex flex-col items-center p-8 transition-colors duration-500 font-['Plus_Jakarta_Sans'] overflow-x-hidden ${
       theme === 'dark' ? 'bg-[#020617] text-white' : 'bg-slate-50 text-slate-950'
     }`}>
       
@@ -146,9 +145,7 @@ const Onboarding: React.FC<Props> = ({
             </button>
             
             <div className="relative group">
-              {/* Glow Layer */}
               <div className="absolute -inset-[2px] rounded-full blur-lg opacity-40 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
-              {/* Moving Border Layer */}
               <div className="absolute -inset-[1.5px] rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move shadow-[0_0_15px_-3px_rgba(37,99,235,0.4)]" />
               
               <button 
@@ -188,7 +185,6 @@ const Onboarding: React.FC<Props> = ({
             
             <div className="w-full space-y-12">
               <div className="space-y-4">
-                {/* Fixed height container to prevent layout shifting when text wraps */}
                 <div className="flex items-center justify-center h-48">
                   <h2 className={`text-4xl md:text-5xl font-black uppercase tracking-[0.3em] leading-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     {loadingMessage}
@@ -214,7 +210,7 @@ const Onboarding: React.FC<Props> = ({
       )}
 
       {/* TOP HEADER */}
-      <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-20 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`w-full max-w-7xl flex items-center z-50 transition-all duration-300 mb-12 ${loading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className="flex items-center space-x-4">
           <Logo size="md" theme={theme} />
           <span className={`font-black text-[12px] uppercase tracking-[0.4em] opacity-90 ${theme === 'dark' ? 'text-white' : 'text-slate-600'}`}>DataForge</span>
@@ -237,119 +233,108 @@ const Onboarding: React.FC<Props> = ({
 
       {/* MAIN CONTENT AREA */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-6xl transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}>
-        <div className="w-full space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
           
-          {/* GREETING & HEADLINE */}
-          <div className="space-y-6 px-2">
+          <div className="space-y-4 px-2">
             <div className={`flex items-center space-x-3 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-              <Sparkles className="w-6 h-6 text-blue-600" />
-              <span className="text-2xl font-medium tracking-tight">Hi analyst!</span>
+              <Sparkles className="w-5 h-5 text-blue-600" />
+              <span className="text-xl font-medium tracking-tight">Hi analyst!</span>
             </div>
-            <div className="space-y-4">
-              <h1 className={`text-6xl md:text-8xl font-black tracking-tight leading-[1.1] md:leading-[1.15] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
-                Find your <span className={`inline-block bg-gradient-to-r ${theme === 'dark' ? 'from-blue-400' : 'from-blue-700'} via-indigo-600 to-purple-700 bg-clip-text text-transparent pb-6 pt-2 -mb-6 -mt-2`}>data edge.</span>
+            <div className="space-y-3">
+              <h1 className={`text-5xl md:text-7xl font-black tracking-tight leading-[1.1] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
+                Find your <span className={`inline-block bg-gradient-to-r ${theme === 'dark' ? 'from-blue-400' : 'from-blue-700'} via-indigo-600 to-purple-700 bg-clip-text text-transparent pb-4 pt-2 -mb-4 -mt-2`}>data edge.</span>
               </h1>
-              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} text-lg md:text-xl font-medium leading-relaxed max-w-4xl`}>
+              <p className={`${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} text-base md:text-lg font-medium leading-relaxed max-w-3xl`}>
                 Master the end-to-end analytical workflow. Solve complex enterprise business cases using SQL and Python with targeted strategic mentorship.
               </p>
             </div>
           </div>
 
-          {error && <div className="p-6 rounded-[32px] bg-rose-500/10 border-2 border-rose-500/20 text-rose-500 font-bold">{error}</div>}
+          {error && <div className="p-4 rounded-[24px] bg-rose-500/10 border-2 border-rose-500/20 text-rose-500 font-bold text-sm">{error}</div>}
 
-          {/* UNIFIED COMMAND BAR */}
-          <div className="space-y-12">
+          <div className="space-y-8">
             <div className="relative group w-full">
-              {/* Animated Glow Layer */}
               <div className="absolute -inset-[2px] rounded-full blur-xl opacity-40 group-focus-within:opacity-80 transition-opacity duration-500 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move" />
-              
-              {/* Animated Border Layer */}
               <div className="absolute -inset-[1.5px] rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-move shadow-[0_0_20px_-5px_rgba(37,99,235,0.3)]" />
 
-              <div className={`relative flex items-center w-full rounded-full transition-all duration-500 p-3 pr-4 shadow-2xl ${
+              <div className={`relative flex items-center w-full rounded-full transition-all duration-500 p-2.5 pr-3 shadow-2xl ${
                 theme === 'dark' 
                   ? 'bg-[#0f172a]' 
                   : 'bg-white'
               }`}>
                 
-                <div className="pl-6 pr-2">
-                  <Search className={`w-6 h-6 transition-colors duration-300 ${theme === 'dark' ? 'text-slate-500/40 group-focus-within:text-blue-500/40' : 'text-slate-500 group-focus-within:text-blue-600'}`} />
+                <div className="pl-5 pr-1">
+                  <Search className={`w-5 h-5 transition-colors duration-300 ${theme === 'dark' ? 'text-slate-500/40 group-focus-within:text-blue-500/40' : 'text-slate-500 group-focus-within:text-blue-600'}`} />
                 </div>
 
-                {/* Input */}
                 <input
                   type="text"
                   value={customIndustry}
                   onChange={(e) => setCustomIndustry(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStart(customIndustry)}
                   placeholder="Ask DataForge for a specific sector..."
-                  className={`flex-1 bg-transparent border-none focus:ring-0 py-5 px-4 text-xl font-medium ${theme === 'dark' ? 'placeholder:text-slate-500/40 text-white' : 'placeholder:text-slate-500 text-slate-900'}`}
+                  className={`flex-1 bg-transparent border-none focus:ring-0 py-4 px-3 text-lg font-medium ${theme === 'dark' ? 'placeholder:text-slate-500/40 text-white' : 'placeholder:text-slate-500 text-slate-900'}`}
                 />
 
-                {/* Actions */}
-                <div className="flex items-center space-x-4">
-                  
-                  {/* Difficulty Selector */}
+                <div className="flex items-center space-x-3">
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDiffOpen(!isDiffOpen)}
-                      className={`flex items-center space-x-3 px-6 py-3 rounded-full border transition-all ${
+                      className={`flex items-center space-x-2 px-5 py-2.5 rounded-full border transition-all ${
                         theme === 'dark' 
                           ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-300' 
                           : 'border-slate-300 bg-slate-50 hover:bg-white text-slate-700'
                       }`}
                     >
-                      <span className="text-xs font-black uppercase tracking-widest">{currentDiffLabel?.label}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDiffOpen ? 'rotate-180' : ''}`} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">{currentDiffLabel?.label}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isDiffOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {isDiffOpen && (
-                      <div className={`absolute top-full right-0 mt-3 w-56 z-[120] rounded-[32px] border shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden p-2 ${
+                      <div className={`absolute top-full right-0 mt-2 w-52 z-[120] rounded-[24px] border shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] overflow-hidden p-1.5 ${
                         theme === 'dark' ? 'bg-[#0f172a] border-slate-800' : 'bg-white border-slate-200'
                       }`}>
                         {difficulties.map(d => (
                           <button
                             key={d.id}
                             onClick={() => { setSelectedDifficulty(d.id); setIsDiffOpen(false); }}
-                            className={`w-full text-left p-4 rounded-[24px] transition-all ${
+                            className={`w-full text-left p-3 rounded-[18px] transition-all ${
                               selectedDifficulty === d.id 
                                 ? 'bg-blue-600 text-white shadow-lg' 
                                 : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500'
                             }`}
                           >
-                            <div className="text-xs font-black uppercase tracking-widest">{d.label}</div>
-                            <div className="text-[10px] opacity-60 font-medium">{d.desc}</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest">{d.label}</div>
+                            <div className="text-[9px] opacity-60 font-medium">{d.desc}</div>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Arrow Button */}
                   <button 
                     onClick={() => handleStart(customIndustry || 'Retail')} 
-                    className="bg-blue-600 text-white p-5 rounded-full shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all"
+                    className="bg-blue-600 text-white p-4 rounded-full shadow-xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all"
                   >
-                    <ArrowRight className="w-7 h-7" />
+                    <ArrowRight className="w-6 h-6" />
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* SECTOR PILLS CLUSTER */}
-            <div className="flex flex-wrap items-center justify-center gap-5 pt-4">
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               {industryPresets.map((ind) => (
                 <button 
                   key={ind.name} 
                   onClick={() => setCustomIndustry(ind.name)} 
-                  className={`flex items-center space-x-4 px-10 py-5 rounded-full border-2 transition-all hover:scale-105 active:scale-95 group ${
+                  className={`flex items-center space-x-3 px-8 py-4 rounded-full border-2 transition-all hover:scale-105 active:scale-95 group ${
                     theme === 'dark' 
                       ? 'bg-slate-900/40 border-slate-800 hover:border-blue-600/50 text-slate-400' 
                       : 'bg-white border-slate-300 hover:border-blue-600/50 shadow-md text-slate-700 font-semibold'
                   }`}
                 >
-                  <ind.icon className={`w-6 h-6 transition-colors ${theme === 'dark' ? 'text-slate-500 group-hover:text-blue-500' : 'text-slate-500 group-hover:text-blue-600'}`} />
-                  <span className="text-base font-bold tracking-tight">{ind.name}</span>
+                  <ind.icon className={`w-5 h-5 transition-colors ${theme === 'dark' ? 'text-slate-500 group-hover:text-blue-500' : 'text-slate-500 group-hover:text-blue-600'}`} />
+                  <span className="text-sm font-bold tracking-tight">{ind.name}</span>
                 </button>
               ))}
             </div>
@@ -357,6 +342,24 @@ const Onboarding: React.FC<Props> = ({
 
         </div>
       </div>
+
+      {/* REFINED FOOTER CREDITS */}
+      <footer className={`w-full mt-12 pb-8 flex flex-col items-center justify-center space-y-4 transition-all duration-700 ${loading ? 'opacity-0' : 'opacity-30 hover:opacity-100'}`}>
+        <div className={`h-px w-24 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-800 to-transparent`} />
+        <div className="flex flex-col items-center space-y-1.5 text-center">
+          <p className={`text-[9px] font-black uppercase tracking-[0.5em] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+            DataForge <span className="opacity-40 font-bold ml-1">2025</span>
+          </p>
+          <a 
+            href="https://www.linkedin.com/in/nevobetesh/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`text-[8px] font-bold uppercase tracking-[0.3em] transition-colors ${theme === 'dark' ? 'text-slate-600 hover:text-blue-400' : 'text-slate-400 hover:text-blue-600'}`}
+          >
+            Nevo Betesh
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };

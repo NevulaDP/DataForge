@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Scenario, NotebookBlock } from '../types';
 import { Play, Trash2, Loader2, AlertCircle, Terminal, Database, Edit3, Eye, Plus, CheckCircle2 } from 'lucide-react';
@@ -27,7 +26,10 @@ interface Props {
   theme: 'light' | 'dark';
 }
 
-const PANDAS_METHODS = ['head()', 'tail()', 'describe()', 'info()', 'columns', 'shape', 'value_counts()', 'groupby()', 'mean()', 'sum()', 'sort_values()', 'dropna()', 'fillna()', 'iloc', 'loc'];
+const PANDAS_METHODS = ['head()', 'tail()', 'describe()', 'info()', 'columns', 'shape', 'value_counts()', 'groupby()', 'mean()', 'sum()', 'sort_values()', 'dropna()', 'fillna()', 'iloc', 'loc', 'merge()', 'join()', 'T', 'reset_index()'];
+const PANDAS_LIB_METHODS = ['merge', 'concat', 'read_csv', 'read_sql', 'DataFrame', 'Series', 'date_range', 'to_datetime', 'pivot_table', 'melt', 'get_dummies'];
+const MATPLOTLIB_METHODS = ['plot', 'scatter', 'bar', 'hist', 'boxplot', 'pie', 'title', 'xlabel', 'ylabel', 'legend', 'grid', 'show', 'savefig', 'figure', 'subplots', 'tight_layout'];
+const NUMPY_METHODS = ['array', 'arange', 'linspace', 'mean', 'median', 'std', 'sum', 'min', 'max', 'random', 'nan', 'inf', 'where', 'zeros', 'ones'];
 
 const createCustomHighlightStyle = (theme: 'light' | 'dark') => {
   const isDark = theme === 'dark';
@@ -87,16 +89,25 @@ const CodeEditor: React.FC<{
         const options: any[] = [];
         if (language === 'python') {
           const dataframes = symbols?.dataframes || {};
+          const variables = symbols?.variables || [];
           if (isMethod) {
             const line = context.state.doc.lineAt(context.pos).text;
             const beforeDotMatch = line.slice(0, context.pos).match(/(\w+)\.$/);
             const beforeDot = beforeDotMatch ? beforeDotMatch[1] : null;
-            if (beforeDot && dataframes[beforeDot]) {
+            
+            if (beforeDot === 'pd') {
+              PANDAS_LIB_METHODS.forEach(m => options.push({ label: m, type: "function", detail: "pandas" }));
+            } else if (beforeDot === 'plt') {
+              MATPLOTLIB_METHODS.forEach(m => options.push({ label: m, type: "function", detail: "matplotlib" }));
+            } else if (beforeDot === 'np') {
+              NUMPY_METHODS.forEach(m => options.push({ label: m, type: "function", detail: "numpy" }));
+            } else if (beforeDot && dataframes[beforeDot]) {
               dataframes[beforeDot].forEach((col: string) => options.push({ label: col, type: "property", detail: "column" }));
               PANDAS_METHODS.forEach(m => options.push({ label: m, type: "method", detail: "pandas" }));
             }
           } else {
             Object.keys(dataframes).forEach(name => options.push({ label: name, type: "variable", detail: "DataFrame" }));
+            variables.forEach((v: string) => options.push({ label: v, type: "variable", detail: "User Variable" }));
             options.push({ label: "pd", type: "namespace" }, { label: "plt", type: "namespace" }, { label: "np", type: "namespace" });
           }
         } else {
@@ -317,7 +328,7 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
                 </div>
                 <CodeEditor value={block.content} onChange={(val) => updateBlock(block.id, { content: val })} onRun={() => runBlock(block.id)} language={block.language!} theme={theme} />
                 {block.output && (
-                  <div className="bg-white dark:bg-[#0c1222] border-2 border-slate-100 dark:border-slate-800 rounded-[32px] overflow-hidden mt-6 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="bg-white dark:bg-[#0c1222] border-2 border-slate-100 dark:border-slate-800 rounded-[32px] overflow-hidden mt-6 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500 relative">
                     <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
                       <div className="px-8 py-3 text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em]">Analysis Results</div>
                     </div>
@@ -335,14 +346,14 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
                             <table className="w-full text-left text-xs border-collapse font-mono">
                               <thead>
                                 <tr className="border-b-2 border-slate-100 dark:border-slate-800">
-                                  {block.output.data.length > 0 && Object.keys(block.output.data[0]).map(k => (<th key={k} className="px-4 py-3 text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">{k}</th>))}
+                                  {block.output.data && block.output.data.length > 0 && Object.keys(block.output.data[0]).map(k => (<th key={k} className="px-4 py-3 text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">{k}</th>))}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                                {block.output.data.slice(0, 15).map((row: any, i: number) => (
+                                {block.output.data && block.output.data.slice(0, 15).map((row: any, i: number) => (
                                   <tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/[0.01] transition-colors">{Object.values(row).map((v: any, j) => (<td key={j} className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{v?.toString() ?? 'null'}</td>))}</tr>
                                 ))}
-                                {block.output.data.length > 15 && (<tr><td colSpan={Object.keys(block.output.data[0]).length} className="px-4 py-4 text-slate-400 italic font-medium">Results truncated ({block.output.data.length} total)</td></tr>)}
+                                {block.output.data && block.output.data.length > 15 && (<tr><td colSpan={Object.keys(block.output.data[0]).length} className="px-4 py-4 text-slate-400 italic font-medium">Results truncated ({block.output.data.length} total)</td></tr>)}
                               </tbody>
                             </table>
                           </div>
@@ -351,7 +362,22 @@ const Notebook: React.FC<Props> = ({ scenario, blocks, setBlocks, onUpdateScenar
                             <img src={block.output.data} alt="Data Visualization" className="max-w-full h-auto rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800" />
                           </div>
                         ) : (
-                          <pre className="text-slate-700 dark:text-slate-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre>
+                          typeof block.output.data === 'string' && block.output.data.trim().length > 0 ? (
+                            <pre className="text-slate-700 dark:text-slate-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">{block.output.data}</pre>
+                          ) : null
+                        )}
+
+                        {/* Executed status pill */}
+                        {(
+                          block.output.type !== 'error' && 
+                          block.output.type !== 'chart' &&
+                          (block.output.type === 'table' ? (!block.output.data || block.output.data.length === 0) : (typeof block.output.data === 'string' ? block.output.data.trim().length === 0 : true)) &&
+                          (!block.output.logs || block.output.logs.trim().length === 0)
+                        ) && (
+                          <div className="flex items-center space-x-2 text-emerald-500 font-black text-[9px] uppercase tracking-widest px-3 py-1.5 bg-emerald-500/5 rounded-full border border-emerald-500/10 w-fit">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Executed</span>
+                          </div>
                         )}
                       </div>
                     </div>
