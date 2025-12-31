@@ -1,64 +1,41 @@
 
 import React, { useState } from 'react';
-import { Monitor, Mail, Send, CheckCircle2, Loader2, Copy, AlertCircle, RefreshCw, Linkedin } from 'lucide-react';
+import { Monitor, CheckCircle2, Share2, Linkedin } from 'lucide-react';
 import Logo from './Logo';
-import { trackEvent, Analytics } from '../analytics';
-
-const MAIL_BRIDGE_URL = 'https://dataforge-mail-bridge.nevobetesh.workers.dev'; 
+import { trackEvent } from '../analytics';
 
 const MobileLockout: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }) => {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const isDark = theme === 'dark';
 
   const APP_URL = window.location.origin;
 
-  const handleCopyLink = () => {
+  const handleCopyFallback = () => {
     navigator.clipboard.writeText(APP_URL);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     trackEvent('mobile_link_copied');
   };
 
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) return;
+  const handleSaveAction = async () => {
+    const shareData = {
+      title: 'DataForge',
+      text: 'Master the end-to-end analytical workflow with DataForge.',
+      url: APP_URL,
+    };
 
-    setStatus('sending');
-    setErrorMessage('');
-    
-    trackEvent(Analytics.MOBILE_INTEREST_CAPTURED, {
-      source: 'mobile_lockout_overlay',
-      method: 'resend_api'
-    });
-
-    try {
-      // Simplified payload for better deliverability
-      const response = await fetch(MAIL_BRIDGE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          url: APP_URL
-        }),
-      });
-
-      const data = await response.json().catch(() => ({ error: 'Communication error' }));
-
-      if (response.ok && !data.error) {
-        setStatus('success');
-      } else {
-        const msg = data.error || 'Failed to send';
-        setErrorMessage(msg.toLowerCase().includes('onboarding') 
-          ? 'System is currently restricted. Please use the direct link below.' 
-          : 'Delivery failed. Please try again or copy the direct link.');
-        setStatus('error');
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        trackEvent('mobile_link_shared');
+      } catch (err) {
+        // If user cancels or share fails, fallback to copy if it wasn't an abort
+        if ((err as Error).name !== 'AbortError') {
+          handleCopyFallback();
+        }
       }
-    } catch (err: any) {
-      setStatus('error');
-      setErrorMessage('Service temporarily unavailable. Please use the direct link below.');
+    } else {
+      handleCopyFallback();
     }
   };
 
@@ -97,97 +74,34 @@ const MobileLockout: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }) => {
               </p>
             </div>
 
-            <div className="space-y-4 text-left">
-              {status === 'success' ? (
-                <div className="py-2 space-y-5 animate-in fade-in slide-in-from-bottom-2 text-center">
-                  <div className="flex flex-col items-center space-y-3">
-                    <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    </div>
-                    <p className="text-sm font-black uppercase tracking-widest text-emerald-500">Welcome Sent</p>
-                    <p className={`text-[11px] font-bold opacity-70 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                      Check your inbox (and <b>spam folder</b>) for your access link.
-                    </p>
-                  </div>
+            <div className="space-y-6 pt-2">
+              <div className="space-y-3">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Access via Desktop</p>
+                <button 
+                  onClick={handleSaveAction}
+                  className={`w-full h-15 py-4 rounded-full border-2 flex items-center justify-center space-x-3 transition-all active:scale-[0.98] shadow-lg ${
+                    isDark 
+                      ? 'bg-blue-600 border-blue-500 text-white hover:bg-blue-500' 
+                      : 'bg-white border-blue-600 text-blue-600 hover:bg-blue-50 shadow-blue-600/10'
+                  }`}
+                >
+                  {copied ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                  <span className="text-[11px] font-black uppercase tracking-widest">{copied ? 'Link Copied' : 'Save for Later'}</span>
+                </button>
+              </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center space-y-3">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Let's connect while you wait</p>
-                    <a 
-                      href="https://www.linkedin.com/in/nevobetesh/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-blue-600 hover:text-blue-500 transition-colors"
-                    >
-                      <Linkedin className="w-4 h-4" />
-                      <span className="text-[11px] font-bold">Nevo Betesh on LinkedIn</span>
-                    </a>
-                  </div>
-
-                  <button 
-                    onClick={() => { setStatus('idle'); setEmail(''); }} 
-                    className="flex items-center justify-center mx-auto space-x-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-500 transition-colors pt-2"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Try another email</span>
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSendEmail} className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="relative group">
-                      <Mail className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${isDark ? 'text-slate-700 group-focus-within:text-blue-500' : 'text-slate-400'}`} />
-                      <input 
-                        type="email" 
-                        required
-                        placeholder="analyst@company.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={`w-full h-14 pl-12 pr-6 text-sm font-bold rounded-full border-2 outline-none transition-all ${
-                          isDark 
-                            ? 'bg-slate-950 border-slate-800 focus:border-blue-500 text-white placeholder:text-slate-800' 
-                            : 'bg-white border-slate-100 focus:border-blue-600 shadow-sm placeholder:text-slate-300'
-                        }`}
-                      />
-                    </div>
-                  </div>
-                  
-                  {errorMessage && (
-                    <div className="text-[9px] font-bold text-rose-500 bg-rose-500/10 p-3 rounded-[20px] border border-rose-500/20 leading-tight uppercase">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <span>{errorMessage}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <button 
-                    disabled={status === 'sending'}
-                    className="w-full h-15 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-[11px] uppercase tracking-[0.15em] flex items-center justify-center space-x-3 shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all"
-                  >
-                    {status === 'sending' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
-                    <span>{status === 'sending' ? 'Dispatching...' : 'Email Me the Link'}</span>
-                  </button>
-
-                  <div className="flex items-center space-x-3 pt-1">
-                    <div className={`h-px flex-1 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-700' : 'text-slate-300'}`}>Or</span>
-                    <div className={`h-px flex-1 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-                  </div>
-
-                  <button 
-                    type="button"
-                    onClick={handleCopyLink}
-                    className={`w-full h-15 py-4 rounded-full border-2 flex items-center justify-center space-x-3 transition-all active:scale-[0.98] ${
-                      isDark 
-                        ? 'bg-slate-800/40 border-slate-800 text-slate-500 hover:text-white' 
-                        : 'bg-white border-slate-200 text-slate-400 hover:text-slate-800'
-                    }`}
-                  >
-                    {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    <span className="text-[11px] font-black uppercase tracking-widest">{copied ? 'Link Copied' : 'Copy Direct URL'}</span>
-                  </button>
-                </form>
-              )}
+              <div className={`pt-6 border-t flex flex-col items-center space-y-3 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Questions?</p>
+                <a 
+                  href="https://www.linkedin.com/in/nevobetesh/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-500 transition-colors"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  <span className="text-[11px] font-bold">Connect on LinkedIn</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
